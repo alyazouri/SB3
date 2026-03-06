@@ -64,25 +64,8 @@ function jordan40(ip){
 
   return (
 
-    ip.startsWith("2a01:9700:3f") ||
-    ip.startsWith("2a01:9700:40") ||
-    ip.startsWith("2a01:9700:41") ||
-    ip.startsWith("2a01:9700:42") ||
-    ip.startsWith("2a01:9700:43") ||
-    ip.startsWith("2a01:9700:44") ||
-    ip.startsWith("2a01:9700:45") ||
-
-    ip.startsWith("2a02:2788:10") ||
-    ip.startsWith("2a02:2788:11") ||
-    ip.startsWith("2a02:2788:12") ||
-    ip.startsWith("2a02:2788:13") ||
-
-    ip.startsWith("2a02:2780:10") ||
-    ip.startsWith("2a02:2780:11") ||
-    ip.startsWith("2a02:2780:12") ||
-
-    ip.startsWith("2a00:1c98:10") ||
-    ip.startsWith("2a00:1c98:20")
+    ip.startsWith("2a01:9700:3900") ||
+    ip.startsWith("2a01:9700:4400")
 
   );
 
@@ -94,19 +77,88 @@ function jordan44(ip){
 
   return (
 
-    ip.startsWith("2a01:9700:401") ||
-    ip.startsWith("2a01:9700:402") ||
-    ip.startsWith("2a01:9700:403") ||
-    ip.startsWith("2a01:9700:404") ||
-    ip.startsWith("2a01:9700:405") ||
-    ip.startsWith("2a01:9700:406") ||
-
-    ip.startsWith("2a02:2788:100") ||
-    ip.startsWith("2a02:2788:110") ||
-    ip.startsWith("2a02:2788:120") ||
-
-    ip.startsWith("2a02:2780:100") ||
-    ip.startsWith("2a02:2780:110")
+ip.startsWith("2a01:9700:17a0") ||
+ip.startsWith("2a01:9700:17b0") ||
+ip.startsWith("2a01:9700:17c0") ||
+ip.startsWith("2a01:9700:17d0") ||
+ip.startsWith("2a01:9700:17e0") ||
+ip.startsWith("2a01:9700:1c70") ||
+ip.startsWith("2a01:9700:1c90") ||
+ip.startsWith("2a01:9700:1ca0") ||
+ip.startsWith("2a01:9700:1cb0") ||
+ip.startsWith("2a01:9700:1cc0") ||
+ip.startsWith("2a01:9700:1cd0") ||
+ip.startsWith("2a01:9700:1ce0") ||
+ip.startsWith("2a01:9700:1cf0") ||
+ip.startsWith("2a01:9700:3130") ||
+ip.startsWith("2a01:9700:3140") ||
+ip.startsWith("2a01:9700:3150") ||
+ip.startsWith("2a01:9700:3160") ||
+ip.startsWith("2a01:9700:3210") ||
+ip.startsWith("2a01:9700:3220") ||
+ip.startsWith("2a01:9700:3230") ||
+ip.startsWith("2a01:9700:3350") ||
+ip.startsWith("2a01:9700:3360") ||
+ip.startsWith("2a01:9700:3370") ||
+ip.startsWith("2a01:9700:3400") ||
+ip.startsWith("2a01:9700:3410") ||
+ip.startsWith("2a01:9700:3420") ||
+ip.startsWith("2a01:9700:34f0") ||
+ip.startsWith("2a01:9700:3520") ||
+ip.startsWith("2a01:9700:3530") ||
+ip.startsWith("2a01:9700:3540") ||
+ip.startsWith("2a01:9700:3550") ||
+ip.startsWith("2a01:9700:3560") ||
+ip.startsWith("2a01:9700:3570") ||
+ip.startsWith("2a01:9700:3580") ||
+ip.startsWith("2a01:9700:3840") ||
+ip.startsWith("2a01:9700:3850") ||
+ip.startsWith("2a01:9700:3860") ||
+ip.startsWith("2a01:9700:3870") ||
+ip.startsWith("2a01:9700:3880") ||
+ip.startsWith("2a01:9700:3890") ||
+ip.startsWith("2a01:9700:38a0") ||
+ip.startsWith("2a01:9700:3920") ||
+ip.startsWith("2a01:9700:3940") ||
+ip.startsWith("2a01:9700:3950") ||
+ip.startsWith("2a01:9700:3960") ||
+ip.startsWith("2a01:9700:3970") ||
+ip.startsWith("2a01:9700:3980") ||
+ip.startsWith("2a01:9700:3990") ||
+ip.startsWith("2a01:9700:3a00") ||
+ip.startsWith("2a01:9700:3a10") ||
+ip.startsWith("2a01:9700:3a20") ||
+ip.startsWith("2a01:9700:3b00") ||
+ip.startsWith("2a01:9700:3bf0") ||
+ip.startsWith("2a01:9700:3ca0") ||
+ip.startsWith("2a01:9700:3cb0") ||
+ip.startsWith("2a01:9700:3cc0") ||
+ip.startsWith("2a01:9700:3cd0") ||
+ip.startsWith("2a01:9700:3d00") ||
+ip.startsWith("2a01:9700:3d10") ||
+ip.startsWith("2a01:9700:3d20") ||
+ip.startsWith("2a01:9700:3df0") ||
+ip.startsWith("2a01:9700:3e00") ||
+ip.startsWith("2a01:9700:3e10") ||
+ip.startsWith("2a01:9700:3e40") ||
+ip.startsWith("2a01:9700:3e50") ||
+ip.startsWith("2a01:9700:3e60") ||
+ip.startsWith("2a01:9700:3f60") ||
+ip.startsWith("2a01:9700:3f70") ||
+ip.startsWith("2a01:9700:3f80") ||
+ip.startsWith("2a01:9700:3f90") ||
+ip.startsWith("2a01:9700:3fa0") ||
+ip.startsWith("2a01:9700:4000") ||
+ip.startsWith("2a01:9700:4030") ||
+ip.startsWith("2a01:9700:4040") ||
+ip.startsWith("2a01:9700:4050") ||
+ip.startsWith("2a01:9700:4060") ||
+ip.startsWith("2a01:9700:40f0") ||
+ip.startsWith("2a01:9700:4110") ||
+ip.startsWith("2a01:9700:4120") ||
+ip.startsWith("2a01:9700:4130") ||
+ip.startsWith("2a01:9700:42b0") ||
+ip.startsWith("2a01:9700:42c0")
 
   );
 
@@ -118,16 +170,8 @@ function jordan48(ip){
 
   return (
 
-    ip.startsWith("2a01:9700:4010") ||
-    ip.startsWith("2a01:9700:4020") ||
-    ip.startsWith("2a01:9700:4030") ||
-    ip.startsWith("2a01:9700:4040") ||
-
-    ip.startsWith("2a02:2788:1000") ||
-    ip.startsWith("2a02:2788:1100") ||
-
-    ip.startsWith("2a02:2780:1000") ||
-    ip.startsWith("2a02:2780:1100")
+    ip.startsWith("2a01:9700:100b") ||
+    ip.startsWith("2a01:9700:140d")
 
   );
 
