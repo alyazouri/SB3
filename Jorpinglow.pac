@@ -1,11 +1,13 @@
 // ============================================================
-// PUBG JORDAN GOD ROUTING
-// Ultra Jordan Focus + Region Block + Match Lock
+// PUBG JORDAN FINAL ROUTING SCRIPT
+// Jordan IPv6 Lock + Lobby 4 Segments + Match 5 Segments
 // ============================================================
 
 var PROXY  = "PROXY 46.185.131.218:20001";
 var DIRECT = "DIRECT";
 var BLOCK  = "PROXY 127.0.0.1:1";
+
+// ================= SESSION =================
 
 var SESSION = {
   isp:null,
@@ -13,9 +15,14 @@ var SESSION = {
   match:null,
   active:false
 };
+
+// ================= IPv6 CHECK =================
+
 function isIPv6(ip){
   return ip && ip.indexOf(":") !== -1;
 }
+
+// ================= EXPAND IPv6 =================
 
 function expandIPv6(address){
 
@@ -52,44 +59,58 @@ function expandIPv6(address){
 
   return full.join(":").toLowerCase();
 }
+
+// ================= JORDAN RANGES =================
+// Source: RIPE NCC allocation for Orange Jordan
+
 function isJordan(ip){
+
+  var parts = ip.split(":");
+  var net3 = parts.slice(0,3).join(":");
 
   return (
 
-    ip.startsWith("2a01:9700") || 
-    ip.startsWith("2a02:2788") || 
-    ip.startsWith("2a02:2780") || 
-    ip.startsWith("2a00:1c98") || 
-    ip.startsWith("2a03:8c")  || 
-    ip.startsWith("2a10") ||
-    ip.startsWith("2a12")
+    net3 === "2a01:9700:3f" ||
+    net3 === "2a01:9700:40" ||
+    net3 === "2a01:9700:41" ||
+    net3 === "2a01:9700:42" ||
+    net3 === "2a01:9700:43" ||
+    net3 === "2a01:9700:44" ||
+    net3 === "2a01:9700:45"
 
   );
 
 }
+
+// ================= REGION BLOCK =================
+
 function isBlocked(ip){
 
   return (
 
-    ip.startsWith("2400") || 
-    ip.startsWith("2401") || 
-    ip.startsWith("2402") || 
+    ip.startsWith("2400") ||
+    ip.startsWith("2401") ||
+    ip.startsWith("2402") ||
     ip.startsWith("2403") ||
 
-    ip.startsWith("2600") || 
+    ip.startsWith("2a05") ||
+    ip.startsWith("2a06") ||
+
+    ip.startsWith("2a0f") ||
+
+    ip.startsWith("2600") ||
     ip.startsWith("2601") ||
 
     ip.startsWith("2800") ||
 
-    ip.startsWith("2c0")  ||
-
-    ip.startsWith("2a0f") || 
-    ip.startsWith("2a05") || 
-    ip.startsWith("2a06")
+    ip.startsWith("2c0")
 
   );
 
 }
+
+// ================= PUBG DETECTION =================
+
 function isPUBG(host){
 
   host = host.toLowerCase();
@@ -102,33 +123,37 @@ function isPUBG(host){
 
   return false;
 }
+
+// ================= LOBBY TRAFFIC =================
+
 function isLobby(data){
 
   return /lobby|login|auth|session|gateway|queue|profile|inventory|store|shop|catalog|news|event|mission|reward|mail|friends|clan|chat|voice|party|team|config|settings|update|patch|cdn|asset|download|social|rank|leaderboard/i
   .test(data);
 
 }
+
+// ================= MATCH TRAFFIC =================
+
 function isMatch(data){
 
   return /match|battle|classic|ranked|arena|tdm|teamdeathmatch|royale|war|payload|metro|zombie|gamesvr|relay|realtime|combat|survival|spectate/i
   .test(data);
 
 }
-function getNet3(ip){
 
-  if(isIPv6(ip))
-    return ip.split(":").slice(0,3).join(":");
-
-  return ip.split(".").slice(0,3).join(".");
-}
+// ================= NETWORK SEGMENTS =================
 
 function getNet4(ip){
-
-  if(isIPv6(ip))
-    return ip.split(":").slice(0,4).join(":");
-
-  return ip.split(".").slice(0,3).join(".");
+  return ip.split(":").slice(0,4).join(":");
 }
+
+function getNet5(ip){
+  return ip.split(":").slice(0,5).join(":");
+}
+
+// ================= MAIN ENGINE =================
+
 function FindProxyForURL(url,host){
 
   if(isPlainHostName(host))
@@ -148,60 +173,64 @@ function FindProxyForURL(url,host){
   if(!ip)
     return PROXY;
 
-  var fullIP=ip;
+  var fullIP = ip;
 
   if(isIPv6(ip))
-    fullIP=expandIPv6(ip);
+    fullIP = expandIPv6(ip);
+
+  // ===== REGION BLOCK =====
 
   if(isBlocked(fullIP))
     return BLOCK;
 
+  // ===== JORDAN FILTER =====
+
   if(!isJordan(fullIP))
     return BLOCK;
 
-  var data=(host+url).toLowerCase();
+  var data = (host + url).toLowerCase();
 
-  var lobby=isLobby(data);
-  var match=isMatch(data);
+  var lobby = isLobby(data);
+  var match = isMatch(data);
 
-  var net3=getNet3(fullIP);
-  var net4=getNet4(fullIP);
+  var net4 = getNet4(fullIP);
+  var net5 = getNet5(fullIP);
+
+  // ===== RESET SESSION =====
 
   if(!match && SESSION.active){
 
-    SESSION.match=null;
-    SESSION.active=false;
+    SESSION.match = null;
+    SESSION.active = false;
 
   }
 
+  // ===== LOBBY LOCK (4 SEGMENTS) =====
+
   if(lobby){
 
-    if(!SESSION.isp)
-      SESSION.isp=net3;
+    if(!SESSION.lobby)
+      SESSION.lobby = net4;
 
-    if(SESSION.isp!==net3)
+    if(net4 !== SESSION.lobby)
       return BLOCK;
-
-    SESSION.lobby=net3;
 
     return PROXY;
 
   }
 
+  // ===== MATCH LOCK (5 SEGMENTS) =====
+
   if(match){
 
     if(!SESSION.match){
 
-      SESSION.match=net4;
-      SESSION.isp=net3;
-      SESSION.active=true;
+      SESSION.match = net5;
+      SESSION.active = true;
 
     }
 
-    if(SESSION.match!==net4)
-      return BLOCK;
-
-    if(SESSION.isp!==net3)
+    if(net5 !== SESSION.match)
       return BLOCK;
 
     return PROXY;
