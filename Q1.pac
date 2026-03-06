@@ -65,6 +65,7 @@ function jordan40(ip){
   return (
 
     ip.startsWith("2a01:9700:3900") ||
+    ip.startsWith("2a01:9700:4300") ||
     ip.startsWith("2a01:9700:4400")
 
   );
@@ -158,7 +159,9 @@ function jordan44(ip){
     ip.startsWith("2a01:9700:4120") ||
     ip.startsWith("2a01:9700:4130") ||
     ip.startsWith("2a01:9700:42b0") ||
-    ip.startsWith("2a01:9700:42c0")
+    ip.startsWith("2a01:9700:42c0") ||
+    ip.startsWith("2a01:9700:4330") ||
+    ip.startsWith("2a01:9700:4338")
 
   );
 
@@ -183,7 +186,6 @@ function jordanIPv4(ip){
 
   return (
 
-    // Orange / JTC
     ip.startsWith("37.202.") ||
     ip.startsWith("46.185.") ||
     ip.startsWith("79.173.") ||
@@ -193,20 +195,14 @@ function jordanIPv4(ip){
     ip.startsWith("94.249.") ||
     ip.startsWith("149.200.") ||
     ip.startsWith("194.165.") ||
-
-    // Zain Jordan
     ip.startsWith("37.44.") ||
     ip.startsWith("46.243.") ||
     ip.startsWith("95.183.") ||
     ip.startsWith("212.118.") ||
-
-    // Umniah
     ip.startsWith("37.17.") ||
     ip.startsWith("46.32.") ||
     ip.startsWith("62.72.") ||
     ip.startsWith("77.245.") ||
-
-    // DAMAMAX / مزودون آخرون أردنيون
     ip.startsWith("5.45.") ||
     ip.startsWith("5.198.") ||
     ip.startsWith("5.199.") ||
@@ -236,7 +232,6 @@ function isBlockedIPv6(ip){
 
   return (
 
-    // الصين — كتلة 240::/12 كاملة
     ip.startsWith("2400") ||
     ip.startsWith("2401") ||
     ip.startsWith("2402") ||
@@ -270,21 +265,13 @@ function isBlockedIPv6(ip){
     ip.startsWith("241e") ||
     ip.startsWith("241f") ||
     ip.startsWith("242") ||
-
-    // تركيا
     ip.startsWith("2a00:7c8") ||
     ip.startsWith("2a02:e0") ||
     ip.startsWith("2a03:b2c0") ||
     ip.startsWith("2a05:d8c0") ||
-
-    // سوريا
     ip.startsWith("2a06:8ec0") ||
     ip.startsWith("2a05:b500") ||
-
-    // روسيا
     ip.startsWith("2a0f") ||
-
-    // مناطق أخرى محظورة
     ip.startsWith("2a05") ||
     ip.startsWith("2a06") ||
     ip.startsWith("2c") ||
