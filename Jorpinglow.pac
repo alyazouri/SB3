@@ -1,16 +1,13 @@
 // ============================================================
-// PUBG JORDAN FINAL ROUTING SCRIPT
-// Jordan IPv6 Lock + Lobby 4 Segments + Match 5 Segments
+// PUBG JORDAN FINAL ISP SCRIPT
+// Jordan IPv6 Lock + Lobby(4) + Match(5)
 // ============================================================
 
 var PROXY  = "PROXY 46.185.131.218:20001";
 var DIRECT = "DIRECT";
 var BLOCK  = "PROXY 127.0.0.1:1";
 
-// ================= SESSION =================
-
 var SESSION = {
-  isp:null,
   lobby:null,
   match:null,
   active:false
@@ -46,7 +43,7 @@ function expandIPv6(address){
 
     full = full.concat(right);
 
-  }else{
+  } else {
 
     full = address.split(":");
 
@@ -60,23 +57,43 @@ function expandIPv6(address){
   return full.join(":").toLowerCase();
 }
 
-// ================= JORDAN RANGES =================
-// Source: RIPE NCC allocation for Orange Jordan
+// ================= JORDAN IPv6 FILTER =================
 
-function isJordan(ip){
-
-  var parts = ip.split(":");
-  var net3 = parts.slice(0,3).join(":");
+function isJordanIPv6(ip){
 
   return (
 
-    net3 === "2a01:9700:3f" ||
-    net3 === "2a01:9700:40" ||
-    net3 === "2a01:9700:41" ||
-    net3 === "2a01:9700:42" ||
-    net3 === "2a01:9700:43" ||
-    net3 === "2a01:9700:44" ||
-    net3 === "2a01:9700:45"
+    // Orange
+    ip.startsWith("2a01:9700:3f") ||
+    ip.startsWith("2a01:9700:40") ||
+    ip.startsWith("2a01:9700:41") ||
+    ip.startsWith("2a01:9700:42") ||
+    ip.startsWith("2a01:9700:43") ||
+    ip.startsWith("2a01:9700:44") ||
+    ip.startsWith("2a01:9700:45") ||
+    ip.startsWith("2a01:9700:4010") ||
+    ip.startsWith("2a01:9700:4020") ||
+    ip.startsWith("2a01:9700:4030") ||
+    ip.startsWith("2a01:9700:4040") ||
+    ip.startsWith("2a01:9700:4050") ||
+
+    // Zain
+    ip.startsWith("2a02:2788:10") ||
+    ip.startsWith("2a02:2788:11") ||
+    ip.startsWith("2a02:2788:12") ||
+    ip.startsWith("2a02:2788:13") ||
+    ip.startsWith("2a02:2788:20") ||
+    ip.startsWith("2a02:2788:21") ||
+
+    // Umniah
+    ip.startsWith("2a02:2780:10") ||
+    ip.startsWith("2a02:2780:11") ||
+    ip.startsWith("2a02:2780:12") ||
+    ip.startsWith("2a02:2780:20") ||
+
+    // JDN
+    ip.startsWith("2a00:1c98:10") ||
+    ip.startsWith("2a00:1c98:20")
 
   );
 
@@ -88,22 +105,19 @@ function isBlocked(ip){
 
   return (
 
-    ip.startsWith("2400") ||
-    ip.startsWith("2401") ||
-    ip.startsWith("2402") ||
-    ip.startsWith("2403") ||
+    ip.startsWith("240") ||
+    ip.startsWith("241") ||
+    ip.startsWith("242") ||
 
     ip.startsWith("2a05") ||
     ip.startsWith("2a06") ||
-
     ip.startsWith("2a0f") ||
 
-    ip.startsWith("2600") ||
-    ip.startsWith("2601") ||
+    ip.startsWith("260") ||
 
-    ip.startsWith("2800") ||
+    ip.startsWith("280") ||
 
-    ip.startsWith("2c0")
+    ip.startsWith("2c")
 
   );
 
@@ -124,25 +138,25 @@ function isPUBG(host){
   return false;
 }
 
-// ================= LOBBY TRAFFIC =================
+// ================= LOBBY =================
 
 function isLobby(data){
 
-  return /lobby|login|auth|session|gateway|queue|profile|inventory|store|shop|catalog|news|event|mission|reward|mail|friends|clan|chat|voice|party|team|config|settings|update|patch|cdn|asset|download|social|rank|leaderboard/i
+  return /lobby|login|auth|session|gateway|queue|profile|inventory|store|shop|event|mission|friends|party|team|settings|patch|update|cdn|download/i
   .test(data);
 
 }
 
-// ================= MATCH TRAFFIC =================
+// ================= MATCH =================
 
 function isMatch(data){
 
-  return /match|battle|classic|ranked|arena|tdm|teamdeathmatch|royale|war|payload|metro|zombie|gamesvr|relay|realtime|combat|survival|spectate/i
+  return /match|battle|classic|ranked|arena|tdm|royale|war|payload|metro|zombie|gamesvr|relay|combat|survival|spectate/i
   .test(data);
 
 }
 
-// ================= NETWORK SEGMENTS =================
+// ================= SEGMENTS =================
 
 function getNet4(ip){
   return ip.split(":").slice(0,4).join(":");
@@ -178,17 +192,13 @@ function FindProxyForURL(url,host){
   if(isIPv6(ip))
     fullIP = expandIPv6(ip);
 
-  // ===== REGION BLOCK =====
-
   if(isBlocked(fullIP))
     return BLOCK;
 
-  // ===== JORDAN FILTER =====
-
-  if(!isJordan(fullIP))
+  if(!isJordanIPv6(fullIP))
     return BLOCK;
 
-  var data = (host + url).toLowerCase();
+  var data = (host+url).toLowerCase();
 
   var lobby = isLobby(data);
   var match = isMatch(data);
@@ -196,16 +206,12 @@ function FindProxyForURL(url,host){
   var net4 = getNet4(fullIP);
   var net5 = getNet5(fullIP);
 
-  // ===== RESET SESSION =====
-
   if(!match && SESSION.active){
 
     SESSION.match = null;
     SESSION.active = false;
 
   }
-
-  // ===== LOBBY LOCK (4 SEGMENTS) =====
 
   if(lobby){
 
@@ -218,8 +224,6 @@ function FindProxyForURL(url,host){
     return PROXY;
 
   }
-
-  // ===== MATCH LOCK (5 SEGMENTS) =====
 
   if(match){
 
