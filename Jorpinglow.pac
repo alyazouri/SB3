@@ -62,38 +62,13 @@ function expandIPv6(address){
 function isJordanIPv6(ip){
 
   return (
-
-    // Orange
-    ip.startsWith("2a01:9700:3f") ||
-    ip.startsWith("2a01:9700:40") ||
-    ip.startsWith("2a01:9700:41") ||
-    ip.startsWith("2a01:9700:42") ||
-    ip.startsWith("2a01:9700:43") ||
-    ip.startsWith("2a01:9700:44") ||
-    ip.startsWith("2a01:9700:45") ||
-    ip.startsWith("2a01:9700:4010") ||
-    ip.startsWith("2a01:9700:4020") ||
-    ip.startsWith("2a01:9700:4030") ||
-    ip.startsWith("2a01:9700:4040") ||
-    ip.startsWith("2a01:9700:4050") ||
-
-    // Zain
-    ip.startsWith("2a02:2788:10") ||
-    ip.startsWith("2a02:2788:11") ||
-    ip.startsWith("2a02:2788:12") ||
-    ip.startsWith("2a02:2788:13") ||
-    ip.startsWith("2a02:2788:20") ||
-    ip.startsWith("2a02:2788:21") ||
-
-    // Umniah
-    ip.startsWith("2a02:2780:10") ||
-    ip.startsWith("2a02:2780:11") ||
-    ip.startsWith("2a02:2780:12") ||
-    ip.startsWith("2a02:2780:20") ||
-
-    // JDN
-    ip.startsWith("2a00:1c98:10") ||
-    ip.startsWith("2a00:1c98:20")
+    ip.startsWith("2a01:9700:1850:") ||
+    ip.startsWith("2a01:9700:3900:") ||
+    ip.startsWith("2a03:6b01:4000:") ||
+    ip.startsWith("2a03:6b01:4400:") ||
+    ip.startsWith("2a03:6b01:6000:") ||
+    ip.startsWith("2a03:6b01:6400:") ||
+    ip.startsWith("2a03:6b01:8000:")
 
   );
 
@@ -159,11 +134,11 @@ function isMatch(data){
 // ================= SEGMENTS =================
 
 function getNet4(ip){
-  return ip.split(":").slice(0,4).join(":");
+  return ip.split(":").slice(0,3).join(":");
 }
 
 function getNet5(ip){
-  return ip.split(":").slice(0,5).join(":");
+  return ip.split(":").slice(0,4).join(":");
 }
 
 // ================= MAIN ENGINE =================
