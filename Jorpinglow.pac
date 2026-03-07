@@ -1,6 +1,7 @@
 // ============================================================
-// PUBG JORDAN FINAL ISP SCRIPT
+// PUBG JORDAN FINAL LOCK SCRIPT
 // Jordan IPv6 Lock + Lobby(4) + Match(5)
+// FINAL STABLE VERSION
 // ============================================================
 
 var PROXY  = "PROXY 46.185.131.218:20001";
@@ -57,21 +58,38 @@ function expandIPv6(address){
   return full.join(":").toLowerCase();
 }
 
-// ================= JORDAN IPv6 FILTER =================
+// ================= JORDAN IPv6 PREFIXES =================
 
 function isJordanIPv6(ip){
 
   return (
-    ip.startsWith("2a01:9700:1000:") ||
-    ip.startsWith("2a01:9700:1720:") ||
-    ip.startsWith("2a01:9700:8400:") ||
-    ip.startsWith("2a01:9700:1850:") ||
-    ip.startsWith("2a01:9700:3900:") ||
-    ip.startsWith("2a03:6b01:4000:") ||
-    ip.startsWith("2a03:6b01:4400:") ||
-    ip.startsWith("2a03:6b01:6000:") ||
-    ip.startsWith("2a03:6b01:6400:") ||
-    ip.startsWith("2a03:6b01:8000:")
+
+    // Orange Jordan
+    ip.startsWith("2a01:9700:") ||
+
+    // Jordan backbone
+    ip.startsWith("2a03:6b00:") ||
+
+    // ISP blocks
+    ip.startsWith("2a02:c040:") ||
+    ip.startsWith("2a02:2558:") ||
+    ip.startsWith("2a02:09c0:") ||
+
+    // Mobile / ISP
+    ip.startsWith("2a05:7500:") ||
+    ip.startsWith("2a05:74c0:") ||
+
+    // Additional ISP
+    ip.startsWith("2a06:9bc0:") ||
+    ip.startsWith("2a06:bd80:") ||
+
+    // Telecom Jordan
+    ip.startsWith("2001:32c0:") ||
+
+    // Other Jordan allocations
+    ip.startsWith("2a01:e240:") ||
+    ip.startsWith("2a01:ee40:") ||
+    ip.startsWith("2a04:6200:")
 
   );
 
@@ -81,18 +99,16 @@ function isJordanIPv6(ip){
 
 function isBlocked(ip){
 
+  if(isJordanIPv6(ip))
+    return false;
+
   return (
 
     ip.startsWith("240") ||
     ip.startsWith("241") ||
     ip.startsWith("242") ||
 
-    ip.startsWith("2a05") ||
-    ip.startsWith("2a06") ||
-    ip.startsWith("2a0f") ||
-
     ip.startsWith("260") ||
-
     ip.startsWith("280") ||
 
     ip.startsWith("2c")
