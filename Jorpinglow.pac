@@ -62,6 +62,9 @@ function expandIPv6(address){
 function isJordanIPv6(ip){
 
   return (
+    ip.startsWith("2a01:9700:1000:") ||
+    ip.startsWith("2a01:9700:1720:") ||
+    ip.startsWith("2a01:9700:8400:") ||
     ip.startsWith("2a01:9700:1850:") ||
     ip.startsWith("2a01:9700:3900:") ||
     ip.startsWith("2a03:6b01:4000:") ||
