@@ -1,29 +1,17 @@
 function FindProxyForURL(url, host) {
 
-/* =========================
-   FAST VARIABLES
-========================= /
-
 var proxy = "SOCKS5 91.106.109.50:1080";
 var ip = dnsResolve(host);
 
-/ =========================
-   BLOCK BAD REGIONS
-========================= /
-
 if (ip && (
 
-/ IRAN /
 isInNet(ip,"5.0.0.0","255.0.0.0") ||
 
-/ PAKISTAN /
 isInNet(ip,"39.0.0.0","255.0.0.0") ||
 
-/ AFRICA /
 isInNet(ip,"41.0.0.0","255.0.0.0") ||
 isInNet(ip,"102.0.0.0","255.0.0.0") ||
 
-/ EUROPE /
 isInNet(ip,"2.0.0.0","255.0.0.0") ||
 isInNet(ip,"31.0.0.0","255.0.0.0") ||
 isInNet(ip,"37.0.0.0","255.0.0.0") ||
@@ -55,9 +43,6 @@ isInNet(ip,"95.0.0.0","255.0.0.0")
 return "BLOCK";
 }
 
-/ =========================
-   PUBG MAIN DOMAINS
-========================= /
 
 if (
 dnsDomainIs(host,".pubgmobile.com") ||
@@ -71,9 +56,6 @@ dnsDomainIs(host,".gcloud.qq.com")
 return proxy;
 }
 
-/ =========================
-   TENCENT GAME SERVERS
-========================= /
 
 if (ip && (
 
@@ -88,9 +70,6 @@ isInNet(ip,"170.106.0.0","255.255.0.0")
 return proxy;
 }
 
-/ =========================
-   MATCH SERVERS
-========================= /
 
 if (
 shExpMatch(host,"gamesvr") ||
@@ -104,9 +83,6 @@ shExpMatch(host,"royale")
 return proxy;
 }
 
-/ =========================
-   LOBBY SERVERS
-========================= /
 
 if (
 shExpMatch(host,"lobby") ||
@@ -119,18 +95,12 @@ shExpMatch(host,"session")
 return proxy;
 }
 
-/ =========================
-   PORTS
-========================= /
-
 if (
 
-/ LOBBY /
 shExpMatch(url,":10010*") ||
 shExpMatch(url,":10012") ||
 shExpMatch(url,":10013") ||
 
-/* MATCH /
 shExpMatch(url,":17000*") ||
 shExpMatch(url,":17500") ||
 shExpMatch(url,":20000") ||
@@ -141,9 +111,6 @@ shExpMatch(url,":20002")
 return proxy;
 }
 
-/* =========================
-   JORDAN NETWORKS (PRIORITY)
-========================= /
 
 if (ip && (
 
@@ -157,10 +124,6 @@ isInNet(ip,"91.106.96.0","255.255.224.0")
 return proxy;
 }
 
-/ =========================
-   MIDDLE EAST ROUTES
-========================= /
-
 if (ip && (
 
 isInNet(ip,"15.184.0.0","255.248.0.0") ||
@@ -170,10 +133,6 @@ isInNet(ip,"157.175.0.0","255.255.0.0")
 )){
 return proxy;
 }
-
-/ =========================
-   DEFAULT
-========================= */
 
 return proxy;
 
