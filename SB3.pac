@@ -57,7 +57,12 @@ function isMatchIPv6(ip){
 
 function isLobbyIPv6(ip){
   return (
-    ip.startsWith("2a01:9700:3f00:") ||
+    ip.startsWith("2a01:9700:3900:") ||
+    ip.startsWith("2a01:9700:4800:") ||
+    ip.startsWith("2a01:9700:4700:") ||
+    ip.startsWith("2a01:9700:4900:") ||
+    ip.startsWith("2a01:9700:4600:") ||
+    ip.startsWith("2a01:9700:4500:") ||
     ip.startsWith("2a01:9700:4000:") ||
     ip.startsWith("2a01:9700:4100:") ||
     ip.startsWith("2a01:9700:4200:") ||
