@@ -6,6 +6,8 @@ function FindProxyForURL(url, host) {
         return proxy;
     }
 
+    /* PUBG DOMAINS */
+
     if (
         dnsDomainIs(host, ".pubgmobile.com") ||
         dnsDomainIs(host, ".igamecj.com") ||
@@ -18,10 +20,13 @@ function FindProxyForURL(url, host) {
         return proxy;
     }
 
+    /* MATCH SERVERS */
+
     if (
         shExpMatch(host, "*gamesvr*") ||
         shExpMatch(host, "*realtime*") ||
         shExpMatch(host, "*relay*") ||
+        shExpMatch(host, "*edge*") ||
         shExpMatch(host, "*battle*") ||
         shExpMatch(host, "*classic*") ||
         shExpMatch(host, "*arena*") ||
@@ -30,16 +35,21 @@ function FindProxyForURL(url, host) {
         return proxy;
     }
 
+    /* LOBBY SERVERS */
+
     if (
         shExpMatch(host, "*lobby*") ||
         shExpMatch(host, "*matchmaking*") ||
         shExpMatch(host, "*queue*") ||
         shExpMatch(host, "*login*") ||
         shExpMatch(host, "*gateway*") ||
-        shExpMatch(host, "*session*")
+        shExpMatch(host, "*session*") ||
+        shExpMatch(host, "*profile*")
     ) {
         return proxy;
     }
+
+    /* GAME PORTS */
 
     if (
         shExpMatch(url, "*:10010*") ||
@@ -58,40 +68,52 @@ function FindProxyForURL(url, host) {
 
     if (ip) {
 
+        /* BLOCK REGIONS */
+
         if (
-            isInNet(ip,"5.0.0.0","255.0.0.0") ||
-            isInNet(ip,"39.0.0.0","255.0.0.0") ||
-            isInNet(ip,"41.0.0.0","255.0.0.0") ||
-            isInNet(ip,"102.0.0.0","255.0.0.0")
+            isInNet(ip, "5.0.0.0", "255.0.0.0") ||
+            isInNet(ip, "39.0.0.0", "255.0.0.0") ||
+            isInNet(ip, "41.0.0.0", "255.0.0.0") ||
+            isInNet(ip, "102.0.0.0", "255.0.0.0")
         ) {
             return "BLOCK";
         }
 
+        /* EXTENDED TENCENT NETWORKS */
+
         if (
-            isInNet(ip,"43.154.0.0","255.254.0.0") ||
-            isInNet(ip,"49.51.0.0","255.255.0.0") ||
-            isInNet(ip,"129.226.0.0","255.255.0.0") ||
-            isInNet(ip,"129.204.0.0","255.255.0.0") ||
-            isInNet(ip,"150.109.0.0","255.255.0.0") ||
-            isInNet(ip,"170.106.0.0","255.255.0.0")
+            isInNet(ip, "43.154.0.0", "255.254.0.0") ||
+            isInNet(ip, "43.155.0.0", "255.255.0.0") ||
+            isInNet(ip, "49.51.0.0", "255.255.0.0") ||
+            isInNet(ip, "49.52.0.0", "255.254.0.0") ||
+            isInNet(ip, "129.226.0.0", "255.255.0.0") ||
+            isInNet(ip, "129.204.0.0", "255.255.0.0") ||
+            isInNet(ip, "129.211.0.0", "255.255.0.0") ||
+            isInNet(ip, "150.109.0.0", "255.255.0.0") ||
+            isInNet(ip, "170.106.0.0", "255.255.0.0") ||
+            isInNet(ip, "170.107.0.0", "255.255.0.0")
         ) {
             return proxy;
         }
 
+        /* JORDAN NETWORKS */
+
         if (
-            isInNet(ip,"82.212.64.0","255.255.224.0") ||
-            isInNet(ip,"176.29.0.0","255.255.0.0") ||
-            isInNet(ip,"213.6.0.0","255.255.0.0") ||
-            isInNet(ip,"188.247.0.0","255.255.128.0") ||
-            isInNet(ip,"91.106.96.0","255.255.224.0")
+            isInNet(ip, "82.212.64.0", "255.255.224.0") ||
+            isInNet(ip, "176.29.0.0", "255.255.0.0") ||
+            isInNet(ip, "213.6.0.0", "255.255.0.0") ||
+            isInNet(ip, "188.247.0.0", "255.255.128.0") ||
+            isInNet(ip, "91.106.96.0", "255.255.224.0")
         ) {
             return proxy;
         }
 
+        /* MIDDLE EAST ROUTES */
+
         if (
-            isInNet(ip,"15.184.0.0","255.248.0.0") ||
-            isInNet(ip,"15.185.0.0","255.255.0.0") ||
-            isInNet(ip,"157.175.0.0","255.255.0.0")
+            isInNet(ip, "15.184.0.0", "255.248.0.0") ||
+            isInNet(ip, "15.185.0.0", "255.255.0.0") ||
+            isInNet(ip, "157.175.0.0", "255.255.0.0")
         ) {
             return proxy;
         }
