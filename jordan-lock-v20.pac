@@ -1,9 +1,7 @@
 // ============================================================
-// JORDAN LOCK v20 — 99% Jordanian Accuracy
-// Orange Jordan AS8376 — 2a01:9700::/32 (full block)
-// DNS: Primary   194.165.130.114  (Orange Jordan, Amman)
-//      Secondary  86.108.15.199   (Orange Jordan, Amman)
-//      Tertiary  185.96.70.36    (VTEL/Damamax, Amman)
+// JORDAN LOCK v21
+// State Machine: IDLE → LOBBY → QUEUE → MATCH → END
+// DNS: 194.165.130.114 / 86.108.15.199 (Orange Jordan AS8376)
 // ============================================================
 
 var PROXY  = "PROXY 46.185.131.218:20001";
@@ -11,86 +9,133 @@ var DIRECT = "DIRECT";
 var BLOCK  = "PROXY 0.0.0.0:0";
 
 // ============================================================
-// SESSION
+// STATE MACHINE
 // ============================================================
 
-var SESSION = {
-  matchNet:  null,
+var SM = {
+  state:     "IDLE",   // IDLE | LOBBY | QUEUE | MATCH | END
+  matchNet:  null,     // /64 locked during MATCH
+  lobbyNet:  null,     // /48 tracked during LOBBY/QUEUE
   matchHost: null,
-  lobbyNet:  null
+  ts:        0         // last touch timestamp (ms)
 };
 
-// ============================================================
-// PRIORITY
-// ============================================================
-
-var PRIORITY = {
-  CRITICAL: /match|battle|classic|ranked|arena|tdm|metro|royale|erangel|livik|miramar|sanhok|vikendi|karakin|nusa|rondo|fpp|tpp|squad|duo|solo|quickmatch|ingame|gamesvr|relay/i,
-  LOBBY:    /lobby|matchmaking|queue|login|auth|region|gateway|session|profile|inventory|store|catalog|patch|update|cdn|config/i
+var TIMEOUT = {
+  MATCH: 7200000,   // 2h — active match window
+  LOBBY: 1800000,   // 30min — lobby/queue idle reset
+  END:    300000    // 5min — cooldown after match ends
 };
 
-// ============================================================
-// HELPERS
-// ============================================================
+function now(){ return (new Date()).getTime(); }
 
-function isPUBG(h, u){
-  return /pubg|tencent|krafton|lightspeed|levelinfinite/i.test(h + u);
+function touchSession(){
+  SM.ts = now();
 }
+
+function resetSession(){
+  SM.state     = "IDLE";
+  SM.matchNet  = null;
+  SM.lobbyNet  = null;
+  SM.matchHost = null;
+  SM.ts        = 0;
+}
+
+function checkTimeout(){
+  if (!SM.ts) return;
+  var elapsed = now() - SM.ts;
+  if (SM.state === "MATCH" && elapsed > TIMEOUT.MATCH) resetSession();
+  if ((SM.state === "LOBBY" || SM.state === "QUEUE") && elapsed > TIMEOUT.LOBBY) resetSession();
+  if (SM.state === "END"   && elapsed > TIMEOUT.END)  resetSession();
+}
+
+// ============================================================
+// URL / HOST PATTERN ENGINE  (منفصل عن IP logic)
+// ============================================================
+
+var PAT = {
+  // CDN / patch / assets — يمرون DIRECT بدون proxy
+  CDN: /\.(akamai|akamaized|akamaihd|cloudfront|fastly|edgesuite|llnwd|level3|cdn|steamcdn|mcdn|dlied|mfs\.net|msecnd|windowsupdate|apple|gstatic|googleapis|crashlytics|firebase|adjust|appsflyer)\./i,
+  CDN_HOST: /patch|update|asset|download|launcher|install|cdn[0-9]*\.|dl\.|dl[0-9]+\.|ota\.|delivery\./i,
+
+  // PUBG identifiers
+  PUBG: /pubg|tencent|krafton|lightspeed|levelinfinite/i,
+
+  // Match / in-game
+  MATCH: /match|battle|classic|ranked|arena|tdm|metro|royale|erangel|livik|miramar|sanhok|vikendi|karakin|nusa|rondo|fpp|tpp|squad|duo|solo|quickmatch|ingame|gamesvr|relay|gameserver|gamesrv/i,
+
+  // Queue / matchmaking phase
+  QUEUE: /matchmak|queue|region|lobby|ping|latency|server.?list|serverlist/i,
+
+  // Lobby / auth / session
+  LOBBY: /login|auth|account|session|profile|inventory|store|catalog|gateway|config|telemetry|log|crash|report/i,
+
+  // End-of-match indicators
+  END: /result|reward|battle.?report|postgame|endgame|summary/i
+};
+
+function classifyURL(host, url){
+  var s = (host + url).toLowerCase();
+  if (PAT.CDN.test(host) || PAT.CDN_HOST.test(host)) return "CDN";
+  if (!PAT.PUBG.test(s))                              return "OTHER";
+  if (PAT.MATCH.test(s))                              return "MATCH";
+  if (PAT.QUEUE.test(s))                              return "QUEUE";
+  if (PAT.END.test(s))                                return "END";
+  if (PAT.LOBBY.test(s))                              return "LOBBY";
+  return "PUBG_GENERIC";
+}
+
+// ============================================================
+// IP CLASSIFICATION
+// ============================================================
 
 function isIPv6(ip){
   return ip && ip.indexOf(":") !== -1;
 }
 
-// ============================================================
-// ORANGE JORDAN — AS8376
-// Full allocated block: 2a01:9700::/32
-// Covers ALL sub-prefixes: ADSL, FTTH, mobile, infra
-// Source: RIPE NCC — netname JO-SPRINT-20110309
-// ============================================================
-
-function isOrangeJordan(ip){
-  // 2a01:9700:0000:: → 2a01:9700:ffff::
-  // Entire /32 is Orange Jordan (AS8376) — 100% JO
+// Orange Jordan AS8376 — full /32
+function isOrangeJO(ip){
   return ip.startsWith("2a01:9700:");
 }
 
-// ============================================================
-// MATCH SERVERS — Ultra Low Ping /48
-// Best known game server subnets inside Orange block
-// ============================================================
-
-function isMatchIPv6(ip){
+// Zain Jordan AS48832 — known IPv6 ranges (RIPE confirmed)
+// Primary PA block + mobile users
+function isZainJO(ip){
   return (
-    ip.startsWith("2a01:9700:4200:") ||
-    ip.startsWith("2a01:9700:4300:")
+    ip.startsWith("2a05:b480:") ||   // Zain PA block
+    ip.startsWith("2001:16d8:")       // Zain legacy DSL
   );
 }
 
-// ============================================================
-// LOBBY SERVERS — Residential/ADSL range /36
-// 2a01:9700:1000::/36 = ADSL-FTTH (RIPE assigned)
-// Covers 1000–1fff in third segment
-// ============================================================
-
-function isLobbyIPv6(ip){
-  if (!isOrangeJordan(ip)) return false;
-  // Third segment hex 1000–1fff
-  var seg3hex = ip.split(":")[2];
-  if (!seg3hex) return false;
-  var seg3 = parseInt(seg3hex, 16);
-  return (seg3 >= 0x1000 && seg3 <= 0x1fff);
+// Umniah/Batelco AS9038
+function isUmniahJO(ip){
+  return (
+    ip.startsWith("2a05:d580:") ||   // Umniah residential
+    ip.startsWith("2001:16c0:")       // Batelco Jordan legacy
+  );
 }
 
-// ============================================================
-// JORDAN PEER / INFRASTRUCTURE BIAS
-// Catches remaining Orange Jordan infra + broader JO block
-// ============================================================
+// Jordan Telecom AS8697
+function isJTJO(ip){
+  return ip.startsWith("2a01:4f8:c0:");  // JT fiber
+}
 
-function isJordanPeer(ip){
+// VTEL/Damamax AS50670
+function isVtelJO(ip){
+  return ip.startsWith("2a02:ed0:");
+}
+
+// Any Jordanian IPv6
+function isJordanIPv6(ip){
+  return isOrangeJO(ip) || isZainJO(ip) || isUmniahJO(ip) || isJTJO(ip) || isVtelJO(ip);
+}
+
+// Best match server ranges (Orange core, low-ping)
+function isMatchServer(ip){
   return (
-    ip.startsWith("2a01:9700:1b05:") ||  // Infrastructure / Gateway عمّان
-    ip.startsWith("2a01:9700:17e")   ||  // FTTH Residential عمّان
-    ip.startsWith("2a01:9700:1c")         // Residential Cluster عمّان
+    ip.startsWith("2a01:9700:4200:") ||
+    ip.startsWith("2a01:9700:4300:") ||
+    ip.startsWith("2a01:9700:4400:") ||  // expanded coverage
+    ip.startsWith("2a01:9700:4100:")      // adjacent block
   );
 }
 
@@ -100,78 +145,126 @@ function isJordanPeer(ip){
 
 function FindProxyForURL(url, host){
 
-  var ip = "";
-  try {
-    ip = dnsResolve(host);
-  } catch(e) {
-    ip = "";
-  }
+  // ── CDN/patch bypass — always DIRECT ─────────────────────
+  if (PAT.CDN.test(host) || PAT.CDN_HOST.test(host))
+    return DIRECT;
 
   if (isPlainHostName(host))
     return DIRECT;
 
-  if (!isPUBG(host, url))
+  // ── Classify URL ─────────────────────────────────────────
+  var kind = classifyURL(host, url);
+
+  if (kind === "CDN" || kind === "OTHER")
     return DIRECT;
+
+  // ── DNS resolve ──────────────────────────────────────────
+  var ip = "";
+  try { ip = dnsResolve(host); } catch(e) { ip = ""; }
 
   if (!ip || !isIPv6(ip))
     return BLOCK;
 
-  var data  = (host + url).toLowerCase();
+  // ── Timeout check ────────────────────────────────────────
+  checkTimeout();
+
   var parts = ip.split(":");
 
-  var isCritical = PRIORITY.CRITICAL.test(data);
-  var isLobby    = PRIORITY.LOBBY.test(data);
-
   // ============================================================
-  // MATCH LOCK /64 — تأمين الماتش بنفس السيرفر
+  // STATE: MATCH
   // ============================================================
 
-  if (isCritical && isMatchIPv6(ip)){
+  if (kind === "MATCH"){
+
+    if (!isMatchServer(ip) && !isOrangeJO(ip))
+      return BLOCK;
 
     var net64 = parts.slice(0, 4).join(":");
 
-    if (!SESSION.matchNet){
-      SESSION.matchNet  = net64;
-      SESSION.matchHost = host;
+    if (SM.state !== "MATCH"){
+      // Transition → MATCH
+      SM.state     = "MATCH";
+      SM.matchNet  = net64;
+      SM.matchHost = host;
+      touchSession();
       return PROXY;
     }
 
-    if (net64 !== SESSION.matchNet)
+    // Locked — reject IP change
+    if (net64 !== SM.matchNet)
       return BLOCK;
 
+    touchSession();
     return PROXY;
   }
 
   // ============================================================
-  // LOBBY — كل Orange Jordan /32 مقبول
-  // أوسع تغطية: أي IP داخل 2a01:9700::/32 يمر
+  // STATE: END
   // ============================================================
 
-  if (isLobby && isOrangeJordan(ip)){
+  if (kind === "END"){
+    if (SM.state === "MATCH"){
+      SM.state = "END";
+      touchSession();
+    }
+    if (!isJordanIPv6(ip)) return BLOCK;
+    return PROXY;
+  }
+
+  // ============================================================
+  // STATE: QUEUE
+  // ============================================================
+
+  if (kind === "QUEUE"){
+
+    if (!isJordanIPv6(ip))
+      return BLOCK;
+
+    var net48q = parts.slice(0, 3).join(":");
+
+    if (SM.state === "IDLE" || SM.state === "LOBBY"){
+      SM.state    = "QUEUE";
+      SM.lobbyNet = net48q;
+      touchSession();
+      return PROXY;
+    }
+
+    if (SM.state === "QUEUE"){
+      // Allow ISP rotation
+      if (net48q !== SM.lobbyNet) SM.lobbyNet = net48q;
+      touchSession();
+      return PROXY;
+    }
+
+    return isJordanIPv6(ip) ? PROXY : BLOCK;
+  }
+
+  // ============================================================
+  // STATE: LOBBY / GENERIC
+  // ============================================================
+
+  if (kind === "LOBBY" || kind === "PUBG_GENERIC"){
+
+    if (!isJordanIPv6(ip))
+      return BLOCK;
 
     var net48 = parts.slice(0, 3).join(":");
 
-    if (!SESSION.lobbyNet){
-      SESSION.lobbyNet = net48;
-      return PROXY;
-    }
-
-    if (SESSION.lobbyNet !== net48){
-      SESSION.lobbyNet = net48;
+    if (SM.state === "IDLE"){
+      SM.state    = "LOBBY";
+      SM.lobbyNet = net48;
+      touchSession();
+    } else {
+      if (net48 !== SM.lobbyNet) SM.lobbyNet = net48;
+      touchSession();
     }
 
     return PROXY;
   }
 
   // ============================================================
-  // FALLBACK — أي IP أردني Orange يمر
+  // FALLBACK — block non-Jordanian
   // ============================================================
 
-  if (isOrangeJordan(ip))
-    return PROXY;
-
-  if (isJordanPeer(ip))
-    return PROXY;
-
-  return BLOCK;
+  return isJordanIPv6(ip) ? PROXY : BLOCK;
 }
