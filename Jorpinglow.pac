@@ -1,7 +1,11 @@
 // ============================================================
-// PUBG JORDAN ADVANCED LOCK SCRIPT
-// Jordan Home IPv6 Lock + Stable Lobby(4) + Match(5)
-// PAC-Compatible / Old Engine Friendly
+// PUBG JORDAN IPv6 RANGE LOCK SCRIPT - COMPLETE
+// يعتمد على نطاقات IPv6 فقط
+// - Allow only Jordan home IPv6 ranges
+// - Block IPv4
+// - Lock lobby by /48 + provider
+// - Lock match by /64 + provider
+// - Better session handling
 // ============================================================
 
 var PROXY  = "PROXY 46.185.131.218:20001";
@@ -9,39 +13,36 @@ var DIRECT = "DIRECT";
 var BLOCK  = "PROXY 127.0.0.1:1";
 
 var SESSION = {
-  lobby: "",
-  match: "",
+  lobbyProvider: "",
+  lobbyNet: "",
+  matchProvider: "",
+  matchNet: "",
   active: false
 };
 
 // ============================================================
-// JORDAN HOME IPv6 CIDRS
+// JORDAN HOME IPv6 RANGES
 // ============================================================
 
-var JORDAN_V6_CIDRS = [
-  "2a00:18d8::/29",   // Orange
-  "2a01:9700::/29",   // JDC / Orange
-  "2a03:b640::/32",   // Umniah
-  "2a03:6b00::/40",   // Zain
-  "2a03:6b01::/34",
-  "2a03:6b01:4000::/34",
-  "2a03:6b01:4000::/38",
-  "2a03:6b01:4400::/38",
-  "2a03:6b01:6000::/38",
-  "2a03:6b01:6400::/38",
-  "2a03:6b01:8000::/34",
-  "2a03:6b01:8000::/40",
-  "2a03:6b02:2000::/48"
+var JORDAN_V6_RANGES = [
+  { name: "orange",     cidr: "2a00:18d8::/29" },
+  { name: "orange_jdc", cidr: "2a01:9700::/29" },
+  { name: "umniah",     cidr: "2a03:b640::/32" },
+  { name: "zain",       cidr: "2a03:6b00::/40" },
+  { name: "zain",       cidr: "2a03:6b01::/34" },
+  { name: "zain",       cidr: "2a03:6b01:4000::/34" },
+  { name: "zain",       cidr: "2a03:6b01:4000::/38" },
+  { name: "zain",       cidr: "2a03:6b01:4400::/38" },
+  { name: "zain",       cidr: "2a03:6b01:6000::/38" },
+  { name: "zain",       cidr: "2a03:6b01:6400::/38" },
+  { name: "zain",       cidr: "2a03:6b01:8000::/34" },
+  { name: "zain",       cidr: "2a03:6b01:8000::/40" },
+  { name: "zain",       cidr: "2a03:6b02:2000::/48" }
 ];
 
 // ============================================================
 // BASIC HELPERS
 // ============================================================
-
-function strStartsWith(s, prefix){
-  if(!s || !prefix) return false;
-  return s.substring(0, prefix.length).toLowerCase() == prefix.toLowerCase();
-}
 
 function safeLower(s){
   if(!s) return "";
@@ -56,12 +57,15 @@ function isIPv4(ip){
   return ip && ip.indexOf(".") != -1;
 }
 
+function isIPLiteral(host){
+  return isIPv4(host) || isIPv6(host);
+}
+
 // ============================================================
 // IPv6 EXPANSION
 // ============================================================
 
 function expandIPv6(address){
-
   if(!address || address.indexOf(":") == -1)
     return address;
 
@@ -103,7 +107,7 @@ function expandIPv6(address){
 }
 
 // ============================================================
-// HEX / BINARY HELPERS
+// IPv6 TO BINARY
 // ============================================================
 
 function hexNibbleToBin(ch){
@@ -146,7 +150,6 @@ function ipv6ToBinary(ip){
 // ============================================================
 
 function matchIPv6CIDR(ip, cidr){
-
   if(!isIPv6(ip) || !cidr)
     return false;
 
@@ -168,83 +171,46 @@ function matchIPv6CIDR(ip, cidr){
   return ipBin.substring(0, bits) == netBin.substring(0, bits);
 }
 
-function isJordanIPv6(ip){
+// ============================================================
+// RANGE LOOKUP
+// ============================================================
+
+function getJordanRangeInfo(ip){
   var i;
 
   if(!isIPv6(ip))
-    return false;
+    return null;
 
-  for(i = 0; i < JORDAN_V6_CIDRS.length; i++){
-    if(matchIPv6CIDR(ip, JORDAN_V6_CIDRS[i]))
-      return true;
+  for(i = 0; i < JORDAN_V6_RANGES.length; i++){
+    if(matchIPv6CIDR(ip, JORDAN_V6_RANGES[i].cidr))
+      return JORDAN_V6_RANGES[i];
   }
 
-  return false;
+  return null;
 }
 
-// ============================================================
-// OPTIONAL REGION BLOCK
-// Blocks obvious non-target IPv6 regions quickly
-// ============================================================
-
-function isClearlyForeignIPv6(ip){
-
-  if(!isIPv6(ip))
-    return false;
-
-  if(isJordanIPv6(ip))
-    return false;
-
-  ip = safeLower(ip);
-
-  return (
-    strStartsWith(ip, "240") ||
-    strStartsWith(ip, "241") ||
-    strStartsWith(ip, "242") ||
-    strStartsWith(ip, "260") ||
-    strStartsWith(ip, "280") ||
-    strStartsWith(ip, "2c")
-  );
+function isJordanIPv6(ip){
+  return getJordanRangeInfo(ip) !== null;
 }
 
-// ============================================================
-// NETWORK CLASSIFICATION
-// ============================================================
-
-function classifyIP(ip){
-
-  if(!ip || ip === "")
-    return "UNKNOWN";
-
-  if(isIPv6(ip)){
-    if(isJordanIPv6(ip))
-      return "JORDAN_HOME_V6";
-
-    if(isClearlyForeignIPv6(ip))
-      return "FOREIGN_V6";
-
-    return "OTHER_V6";
-  }
-
-  if(isIPv4(ip))
-    return "IPV4";
-
-  return "UNKNOWN";
+function getProviderName(ip){
+  var info = getJordanRangeInfo(ip);
+  if(!info) return "";
+  return info.name;
 }
 
 // ============================================================
 // PUBG DETECTION
 // ============================================================
 
-function isPUBG(host){
+function isPUBG(host, url){
+  var data = safeLower(host + " " + url);
 
-  host = safeLower(host);
-
-  if(host.indexOf("pubg") != -1) return true;
-  if(host.indexOf("tencent") != -1) return true;
-  if(host.indexOf("krafton") != -1) return true;
-  if(host.indexOf("levelinfinite") != -1) return true;
-  if(host.indexOf("lightspeed") != -1) return true;
+  if(data.indexOf("pubg") != -1) return true;
+  if(data.indexOf("tencent") != -1) return true;
+  if(data.indexOf("krafton") != -1) return true;
+  if(data.indexOf("levelinfinite") != -1) return true;
+  if(data.indexOf("lightspeed") != -1) return true;
 
   return false;
 }
@@ -262,38 +228,58 @@ function isMatch(data){
 }
 
 // ============================================================
-// NETWORK SEGMENTS
+// GROUPING
 // ============================================================
 
-function getNet4(ip){
+function getIPv6Group(ip, hextets){
   if(!isIPv6(ip)) return "";
-  return ip.split(":").slice(0, 3).join(":");
+  return expandIPv6(ip).split(":").slice(0, hextets).join(":");
 }
 
-function getNet5(ip){
-  if(!isIPv6(ip)) return "";
-  return ip.split(":").slice(0, 4).join(":");
+function getLobbyGroup(ip){
+  return getIPv6Group(ip, 3); // /48
+}
+
+function getMatchGroup(ip){
+  return getIPv6Group(ip, 4); // /64
 }
 
 // ============================================================
-// SESSION CONTROL
+// SESSION HELPERS
 // ============================================================
 
-function resetMatchSession(){
-  SESSION.match = "";
+function resetAllSessions(){
+  SESSION.lobbyProvider = "";
+  SESSION.lobbyNet = "";
+  SESSION.matchProvider = "";
+  SESSION.matchNet = "";
   SESSION.active = false;
 }
 
-function rememberLobby(net4){
-  if(SESSION.lobby === "")
-    SESSION.lobby = net4;
+function resetMatchSession(){
+  SESSION.matchProvider = "";
+  SESSION.matchNet = "";
+  SESSION.active = false;
 }
 
-function rememberMatch(net5){
-  if(SESSION.match === ""){
-    SESSION.match = net5;
-    SESSION.active = true;
+// ============================================================
+// RESOLVE TARGET IP
+// مهم: PAC engines قد لا ترجع AAAA بشكل مضمون
+// ============================================================
+
+function resolveTargetIP(host){
+  var ip = "";
+
+  if(isIPLiteral(host))
+    return host;
+
+  try{
+    ip = dnsResolve(host);
+  }catch(e){
+    ip = "";
   }
+
+  return ip;
 }
 
 // ============================================================
@@ -304,86 +290,96 @@ function FindProxyForURL(url, host){
 
   var ip = "";
   var fullIP = "";
-  var cls = "";
+  var provider = "";
   var data = "";
   var lobby = false;
   var match = false;
-  var net4 = "";
-  var net5 = "";
+  var lobbyGroup = "";
+  var matchGroup = "";
 
   if(isPlainHostName(host))
     return DIRECT;
 
-  if(!isPUBG(host))
+  if(!isPUBG(host, url))
     return DIRECT;
 
-  try{
-    ip = dnsResolve(host);
-  }catch(e){
-    ip = "";
-  }
+  ip = resolveTargetIP(host);
 
+  // إذا المحرك ما رجع IP، خليه يمر على البروكسي بدل ما يضيع الاتصال
   if(!ip || ip === "")
     return PROXY;
 
-  fullIP = ip;
-
-  if(isIPv6(ip))
-    fullIP = expandIPv6(ip);
-
-  cls = classifyIP(fullIP);
-
-  // Strict IPv6 lock:
-  // Allow only Jordan home IPv6 for PUBG IPv6 targets.
-  if(cls == "FOREIGN_V6")
+  // امنع IPv4 كليًا
+  if(isIPv4(ip))
     return BLOCK;
 
-  if(cls == "OTHER_V6")
+  // لازم يكون IPv6
+  if(!isIPv6(ip))
     return BLOCK;
 
-  // If target is IPv4, let it pass to proxy.
-  // If you want full Jordan-only strictness, change this to BLOCK.
-  if(cls == "IPV4")
-    return PROXY;
+  fullIP = expandIPv6(ip);
 
-  // Unknown or malformed
-  if(cls == "UNKNOWN")
+  // لازم يكون من النطاقات الأردنية فقط
+  if(!isJordanIPv6(fullIP))
+    return BLOCK;
+
+  provider = getProviderName(fullIP);
+  if(provider === "")
     return BLOCK;
 
   data = safeLower(host + url);
-
   lobby = isLobby(data);
   match = isMatch(data);
 
-  net4 = getNet4(fullIP);
-  net5 = getNet5(fullIP);
+  lobbyGroup = getLobbyGroup(fullIP);
+  matchGroup = getMatchGroup(fullIP);
 
-  // If current request is not match traffic, drop active match lock
+  // إذا الطلب ليس match، نظف قفل الماتش
   if(!match && SESSION.active)
     resetMatchSession();
 
-  // Lobby lock on /48-ish grouping using first 3 hextets
+  // ---------------- LOBBY ----------------
   if(lobby){
 
-    rememberLobby(net4);
+    if(SESSION.lobbyProvider === ""){
+      SESSION.lobbyProvider = provider;
+      SESSION.lobbyNet = lobbyGroup;
+    }
 
-    if(SESSION.lobby !== "" && net4 != SESSION.lobby)
+    if(provider != SESSION.lobbyProvider)
+      return BLOCK;
+
+    if(lobbyGroup != SESSION.lobbyNet)
       return BLOCK;
 
     return PROXY;
   }
 
-  // Match lock on tighter grouping using first 4 hextets
+  // ---------------- MATCH ----------------
   if(match){
 
-    rememberMatch(net5);
+    if(SESSION.matchProvider === ""){
+      SESSION.matchProvider = provider;
+      SESSION.matchNet = matchGroup;
+      SESSION.active = true;
+    }
 
-    if(SESSION.match !== "" && net5 != SESSION.match)
+    if(provider != SESSION.matchProvider)
+      return BLOCK;
+
+    if(matchGroup != SESSION.matchNet)
       return BLOCK;
 
     return PROXY;
   }
 
-  // Non-lobby non-match PUBG traffic inside allowed Jordan home IPv6
+  // ---------------- OTHER PUBG TRAFFIC ----------------
+  // لازم يبقى داخل نفس النطاقات الأردنية
+  // وإذا كان عندك لوبي محفوظ، ثبّت عليه
+  if(SESSION.lobbyProvider !== ""){
+    if(provider != SESSION.lobbyProvider)
+      return BLOCK;
+  }
+
   return PROXY;
 }
