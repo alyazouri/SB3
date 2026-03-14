@@ -65,11 +65,11 @@ function isJordanIPv6(ip){
   return (
 
 
-    ip.startsWith("2a03:6b01:4000:") ||
-    ip.startsWith("2a03:6b01:6000:") ||
-    ip.startsWith("2a03:6b01:6400:") ||
-    ip.startsWith("2a03:6b01:8000:") ||
-    ip.startsWith("2a03:6b02:2000:") ||
+    ip.startsWith("2a00:18d8:") ||
+    ip.startsWith("2a01:9700:") ||
+    ip.startsWith("2a03:b640:") ||
+    ip.startsWith("2a03:6b00:") ||
+    ip.startsWith("2a03:6b01:")
 
 
   );
