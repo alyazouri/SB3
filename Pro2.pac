@@ -1,6 +1,7 @@
 // ============================================================
-// PUBG MOBILE — JORDAN FIRST LOCK v11.0
+// PUBG MOBILE — JORDAN FIRST LOCK v12.0
 // Jordan-first aggressive / IPv6 only / fail-closed
+// Max players — stays within Jordan
 // ============================================================
 
 var PROXY  = "PROXY 46.185.131.218:20001";
@@ -12,13 +13,13 @@ var BLOCK  = "PROXY 0.0.0.0:0";
 // ============================================================
 
 var SETTINGS = {
-  STRICT_IPV6_ONLY:         true,
-  FAIL_CLOSED_FOR_PUBG:     false,
-  AGGRESSIVE_JORDAN_LOBBY:  false,
-  JORDAN_REQUIRED_BEFORE_MATCH: false,
-  MATCH_TTL_MS:             35 * 60 * 1000,
-  LOBBY_TTL_MS:             10 * 60 * 1000,
-  JORDAN_TTL_MS:            40 * 60 * 1000
+  STRICT_IPV6_ONLY:             true,
+  FAIL_CLOSED_FOR_PUBG:         true,
+  AGGRESSIVE_JORDAN_LOBBY:      true,
+  JORDAN_REQUIRED_BEFORE_MATCH: true,
+  MATCH_TTL_MS:                 40 * 60 * 1000,  // رُفع من 25 إلى 40 دقيقة
+  LOBBY_TTL_MS:                 10 * 60 * 1000,
+  JORDAN_TTL_MS:                30 * 60 * 1000
 };
 
 // ============================================================
@@ -49,41 +50,45 @@ var RE = {
   MATCH:        /(match|battle|classic|ranked|arena|tdm|metro|royale|erangel|livik|miramar|sanhok|vikendi|karakin|nusa|rondo|fpp|tpp|squad|duo|solo|quickmatch|ingame|gamesvr|relay)/i,
   LOBBY_STRICT: /(lobby|matchmaking|queue|login|auth|region|gateway|session)/i,
   LOBBY_SOFT:   /(profile|inventory|store|catalog|patch|update|cdn|config)/i,
-  RESET:        /(lobby|matchmaking|queue|login|auth|session)/i
+  RESET:        /(lobby|matchmaking|queue|session)/i
 };
 
 // ============================================================
 // PREFIXES
-// لا تضيف إلا prefixes مؤكدة من AAAA / logs / captures
 // ============================================================
 
+// مطابقة MATCH_PREFIXES مع JORDAN_INFRA_PREFIXES لضمان أوسع تغطية
 var MATCH_PREFIXES = [
-  "2a00:18d8:", // Jordan Telecommunications PSC / Orange Jordan
-  "2a01:9700:", // Jordan Data Communications Company LLC
-  "2a03:6b00:", // Jordanian mobile phone services Ltd
-  "2a05:7500:"  // Umniah Mobile Company PLC
+  "2a00:18d8:", // Orange Jordan / Jordan Telecommunications PSC
+  "2a01:9700:", // JDC / Jordan Data Communications Company
+  "2a03:6b00:", // Zain Jordan / Jordanian mobile phone services Ltd
+  "2a05:7500:", // Umniah Mobile Company PLC
+  "2a02:f0c0:", // ATCO / Al Bahrainia al Urdunia
+  "2a00:18d0:", // AL-HADATHEH LIL-ITISALAT
+  "2a03:b640:", // Bahraini Jordanian for Technology
+  "2a00:4620:"  // Umniah Lil-Hawatef Al-Mutanaqelah
 ];
 
 var JORDAN_INFRA_PREFIXES = [
-  "2a00:18d8:", // Jordan Telecommunications PSC / Orange Jordan
-  "2a01:9700:", // Jordan Data Communications Company LLC
-  "2a03:6b00:", // Jordanian mobile phone services Ltd (mobile operator)
-  "2a05:7500:", // Umniah Mobile Company PLC
-  "2a02:f0c0:", // Al Bahrainia al Urdunia Liltaknia Wa Alitisalat Plc. Co
-  "2a00:18d0:", // AL-HADATHEH LIL-ITISALAT WA AL-TECHNOLOGIA CO.
-  "2a03:b640:", // Bahraini Jordanian for Technology and Communications
-  "2a00:4620:"  // Umniah Lil-Hawatef Al-Mutanaqelah Co.
+  "2a00:18d8:",
+  "2a01:9700:",
+  "2a03:6b00:",
+  "2a05:7500:",
+  "2a02:f0c0:",
+  "2a00:18d0:",
+  "2a03:b640:",
+  "2a00:4620:"
 ];
 
 var JORDAN_RES_PREFIXES = [
-  "2a00:18d8:", // Orange Jordan / fixed + core + broadband
-  "2a01:9700:", // JDC / data + internet + enterprise
-  "2a03:6b00:", // Zain Jordan / mobile access
-  "2a05:7500:", // Umniah / mobile access
-  "2a02:f0c0:", // ATCO / telecom infra
-  "2a00:18d0:", // telecom infra
-  "2a03:b640:", // telecom infra
-  "2a00:4620:"  // Umniah-related allocation
+  "2a00:18d8:",
+  "2a01:9700:",
+  "2a03:6b00:",
+  "2a05:7500:",
+  "2a02:f0c0:",
+  "2a00:18d0:",
+  "2a03:b640:",
+  "2a00:4620:"
 ];
 
 // ============================================================
@@ -100,14 +105,11 @@ function nowMs(){
 
 function normalizeHostLiteral(host){
   host = host || "";
-
   if (host.length > 1 && host.charAt(0) == "[" && host.charAt(host.length - 1) == "]")
     host = host.substring(1, host.length - 1);
-
   var pct = host.indexOf("%");
   if (pct > -1)
     host = host.substring(0, pct);
-
   return lower(host);
 }
 
@@ -124,108 +126,69 @@ function isHexChar(ch){
 
 function cleanupToken(token){
   token = lower(token || "");
-
   while (token.length > 0) {
     var a = token.charAt(0);
-    if (isHexChar(a) || a == ":" || a == "[")
-      break;
+    if (isHexChar(a) || a == ":" || a == "[") break;
     token = token.substring(1);
   }
-
   while (token.length > 0) {
     var b = token.charAt(token.length - 1);
-    if (isHexChar(b) || b == ":" || b == "]")
-      break;
+    if (isHexChar(b) || b == ":" || b == "]") break;
     token = token.substring(0, token.length - 1);
   }
-
   if (token.length > 1 && token.charAt(0) == "[" && token.charAt(token.length - 1) == "]")
     token = token.substring(1, token.length - 1);
-
   var pct = token.indexOf("%");
   if (pct > -1)
     token = token.substring(0, pct);
-
   return token;
 }
 
 function cleanHextet(h){
   var i;
-
   h = lower(h);
-
-  if (h === "")
-    return "0";
-
-  if (h.indexOf(".") != -1)
-    return "";
-
+  if (h === "") return "0";
+  if (h.indexOf(".") != -1) return "";
   for (i = 0; i < h.length; i++){
-    if (!isHexChar(h.charAt(i)))
-      return "";
+    if (!isHexChar(h.charAt(i))) return "";
   }
-
   while (h.length > 1 && h.charAt(0) == "0")
     h = h.substring(1);
-
   return h === "" ? "0" : h;
 }
 
 function expandIPv6(ip){
   var parts, left, right, out, i, missing;
-
   ip = cleanupToken(ip);
-
-  if (!isIPv6Text(ip))
-    return null;
-
-  if (ip.indexOf("::") != ip.lastIndexOf("::"))
-    return null;
-
+  if (!isIPv6Text(ip)) return null;
+  if (ip.indexOf("::") != ip.lastIndexOf("::")) return null;
   parts = ip.split("::");
   left  = parts[0] ? parts[0].split(":") : [];
   right = (parts.length > 1 && parts[1]) ? parts[1].split(":") : [];
-
   out = [];
-
   if (parts.length == 1){
-    if (left.length != 8)
-      return null;
-
+    if (left.length != 8) return null;
     for (i = 0; i < left.length; i++){
       left[i] = cleanHextet(left[i]);
-      if (!left[i])
-        return null;
+      if (!left[i]) return null;
       out.push(left[i]);
     }
-
     return out;
   }
-
   missing = 8 - (left.length + right.length);
-  if (missing < 1)
-    return null;
-
+  if (missing < 1) return null;
   for (i = 0; i < left.length; i++){
     left[i] = cleanHextet(left[i]);
-    if (!left[i])
-      return null;
+    if (!left[i]) return null;
     out.push(left[i]);
   }
-
-  for (i = 0; i < missing; i++)
-    out.push("0");
-
+  for (i = 0; i < missing; i++) out.push("0");
   for (i = 0; i < right.length; i++){
     right[i] = cleanHextet(right[i]);
-    if (!right[i])
-      return null;
+    if (!right[i]) return null;
     out.push(right[i]);
   }
-
-  if (out.length != 8)
-    return null;
-
+  if (out.length != 8) return null;
   return out;
 }
 
@@ -252,8 +215,7 @@ function net64(ip){
 
 function thirdHextetValue(ip){
   var ex = expandIPv6(ip);
-  if (!ex)
-    return -1;
+  if (!ex) return -1;
   return parseInt(ex[2], 16);
 }
 
@@ -267,55 +229,37 @@ function isPUBG(host, url){
 
 function isMatchIPv6(ip){
   var i, c;
-
   c = canonicalIPv6(ip);
-  if (!c)
-    return false;
-
+  if (!c) return false;
   for (i = 0; i < MATCH_PREFIXES.length; i++){
-    if (hasPrefix(c, MATCH_PREFIXES[i]))
-      return true;
+    if (hasPrefix(c, MATCH_PREFIXES[i])) return true;
   }
-
   return false;
 }
 
 function isLobbyIPv6(ip){
   var h = thirdHextetValue(ip);
-
-  if (h < 0x1000 || h > 0x9000)
-    return false;
-
+  if (h < 0x1000 || h > 0x9000) return false;
   return ((h - 0x1000) % 0x100) == 0;
 }
 
 function isJordanInfra(ip){
   var i, c;
-
   c = canonicalIPv6(ip);
-  if (!c)
-    return false;
-
+  if (!c) return false;
   for (i = 0; i < JORDAN_INFRA_PREFIXES.length; i++){
-    if (hasPrefix(c, JORDAN_INFRA_PREFIXES[i]))
-      return true;
+    if (hasPrefix(c, JORDAN_INFRA_PREFIXES[i])) return true;
   }
-
   return false;
 }
 
 function isJordanResidential(ip){
   var i, c;
-
   c = canonicalIPv6(ip);
-  if (!c)
-    return false;
-
+  if (!c) return false;
   for (i = 0; i < JORDAN_RES_PREFIXES.length; i++){
-    if (hasPrefix(c, JORDAN_RES_PREFIXES[i]))
-      return true;
+    if (hasPrefix(c, JORDAN_RES_PREFIXES[i])) return true;
   }
-
   return false;
 }
 
@@ -332,15 +276,9 @@ function isApprovedIPv6(ip){
 // ============================================================
 
 function detectMode(data){
-  if (RE.MATCH.test(data))
-    return "match";
-
-  if (RE.LOBBY_STRICT.test(data))
-    return "lobby_strict";
-
-  if (RE.LOBBY_SOFT.test(data))
-    return "lobby_soft";
-
+  if (RE.MATCH.test(data))       return "match";
+  if (RE.LOBBY_STRICT.test(data)) return "lobby_strict";
+  if (RE.LOBBY_SOFT.test(data))   return "lobby_soft";
   return "generic";
 }
 
@@ -349,8 +287,7 @@ function scoreIPv6(ip, mode){
   var n48 = net48(ip);
   var n64 = net64(ip);
 
-  if (!canonicalIPv6(ip))
-    return -1;
+  if (!canonicalIPv6(ip)) return -1;
 
   if (mode == "match"){
     if (isMatchIPv6(ip)) s += 1400;
@@ -391,12 +328,10 @@ function scoreIPv6(ip, mode){
 
 function pickBestIPv6(raw, mode){
   var i, start, token, best, bestScore, c, sc;
-
   raw = lower("" + (raw || ""));
   best = "";
   bestScore = -1;
   start = 0;
-
   for (i = 0; i <= raw.length; i++){
     if (
       i == raw.length ||
@@ -409,7 +344,6 @@ function pickBestIPv6(raw, mode){
     ){
       token = cleanupToken(raw.substring(start, i));
       c = canonicalIPv6(token);
-
       if (c){
         sc = scoreIPv6(c, mode);
         if (sc > bestScore){
@@ -417,47 +351,34 @@ function pickBestIPv6(raw, mode){
           bestScore = sc;
         }
       }
-
       start = i + 1;
     }
   }
-
   if (!best){
     c = canonicalIPv6(cleanupToken(raw));
-    if (c)
-      return c;
+    if (c) return c;
   }
-
   return best;
 }
 
 function resolveBestIPv6(host, mode){
   var literal, raw, ip;
-
   literal = normalizeHostLiteral(host);
-
-  if (isIPv6Text(literal))
-    return canonicalIPv6(literal);
-
+  if (isIPv6Text(literal)) return canonicalIPv6(literal);
   raw = "";
   ip  = "";
-
   try {
     if (typeof dnsResolveEx == "function"){
       raw = dnsResolveEx(literal);
       ip = pickBestIPv6(raw, mode);
-      if (ip)
-        return ip;
+      if (ip) return ip;
     }
   } catch(e) {}
-
   try {
     raw = dnsResolve(literal);
     ip = pickBestIPv6(raw, mode);
-    if (ip)
-      return ip;
+    if (ip) return ip;
   } catch(e2) {}
-
   return "";
 }
 
@@ -505,17 +426,13 @@ function touchMatch(host, ip){
 
 function resetExpiredLocks(){
   var t = nowMs();
-
   if (SESSION.matchNet && (t - SESSION.matchTs > SETTINGS.MATCH_TTL_MS))
     clearMatchLock();
-
   if (SESSION.lobbyNet && (t - SESSION.lobbyTs > SETTINGS.LOBBY_TTL_MS))
     clearLobbyLock();
-
   if (SESSION.jordanReady && (t - SESSION.jordanTs > SETTINGS.JORDAN_TTL_MS)){
     clearJordanLock();
-    if (SESSION.lobbyJordan)
-      clearLobbyLock();
+    if (SESSION.lobbyJordan) clearLobbyLock();
   }
 }
 
@@ -586,7 +503,11 @@ function FindProxyForURL(url, host){
         touchLobby(ip, true);
         return PROXY;
       }
-
+      // تخفيف: نقبل Lobby IPs معتمدة بدل BLOCK كامل
+      if (isLobbyIPv6(ip)){
+        touchLobby(ip, false);
+        return PROXY;
+      }
       return BLOCK;
     }
 
@@ -599,11 +520,18 @@ function FindProxyForURL(url, host){
   }
 
   // ----------------------------------------------------------
-  // MATCH — يبدأ فقط بعد Jordan lock
+  // MATCH — مع fallback لـ Jordan IP مباشر
   // ----------------------------------------------------------
   if (critical && isMatchIPv6(ip)){
-    if (SETTINGS.JORDAN_REQUIRED_BEFORE_MATCH && !SESSION.jordanReady)
+    if (SETTINGS.JORDAN_REQUIRED_BEFORE_MATCH && !SESSION.jordanReady){
+      // ← تعديل v12: لو الـ IP نفسه أردني نعتبره Jordan-first تلقائياً
+      if (jordan){
+        pinJordan(host, ip);
+        touchMatch(host, ip);
+        return PROXY;
+      }
       return BLOCK;
+    }
 
     if (!SESSION.matchNet){
       touchMatch(host, ip);
@@ -626,18 +554,15 @@ function FindProxyForURL(url, host){
       SESSION.jordanTs = nowMs();
       return PROXY;
     }
-
     if (jordan){
       pinJordan(host, ip);
       touchLobby(ip, true);
       return PROXY;
     }
-
     if (SESSION.lobbyNet && n48 == SESSION.lobbyNet){
       SESSION.lobbyTs = nowMs();
       return PROXY;
     }
-
     touchLobby(ip, false);
     return PROXY;
   }
