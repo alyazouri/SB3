@@ -13,12 +13,12 @@ var BLOCK  = "PROXY 0.0.0.0:0";
 
 var SETTINGS = {
   STRICT_IPV6_ONLY:         true,
-  FAIL_CLOSED_FOR_PUBG:     true,
-  AGGRESSIVE_JORDAN_LOBBY:  true,
-  JORDAN_REQUIRED_BEFORE_MATCH: true,
-  MATCH_TTL_MS:             25 * 60 * 1000,
+  FAIL_CLOSED_FOR_PUBG:     false,
+  AGGRESSIVE_JORDAN_LOBBY:  false,
+  JORDAN_REQUIRED_BEFORE_MATCH: false,
+  MATCH_TTL_MS:             35 * 60 * 1000,
   LOBBY_TTL_MS:             10 * 60 * 1000,
-  JORDAN_TTL_MS:            30 * 60 * 1000
+  JORDAN_TTL_MS:            40 * 60 * 1000
 };
 
 // ============================================================
