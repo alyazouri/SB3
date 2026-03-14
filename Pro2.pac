@@ -72,6 +72,12 @@ var JORDAN_INFRA_PREFIXES = [
 
 var JORDAN_RES_PREFIXES = [
   "2a01:9700:17e",  // Residential / FTTH Jordan
+ "2a01:9700:4200:",
+  "2a01:9700:4000:",
+  "2a01:9700:4100:",
+  "2a01:9700:4300:",
+  "2a01:9700:4400:",
+  "2a01:9700:4300:",
   "2a01:9700:1c"    // Residential cluster Jordan
 ];
 
