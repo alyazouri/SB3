@@ -64,32 +64,13 @@ function isJordanIPv6(ip){
 
   return (
 
-    // Orange Jordan
-    ip.startsWith("2a01:9700:") ||
 
-    // Jordan backbone
-    ip.startsWith("2a03:6b00:") ||
+    ip.startsWith("2a03:6b01:4000:") ||
+    ip.startsWith("2a03:6b01:6000:") ||
+    ip.startsWith("2a03:6b01:6400:") ||
+    ip.startsWith("2a03:6b01:8000:") ||
+    ip.startsWith("2a03:6b02:2000:") ||
 
-    // ISP blocks
-    ip.startsWith("2a02:c040:") ||
-    ip.startsWith("2a02:2558:") ||
-    ip.startsWith("2a02:09c0:") ||
-
-    // Mobile / ISP
-    ip.startsWith("2a05:7500:") ||
-    ip.startsWith("2a05:74c0:") ||
-
-    // Additional ISP
-    ip.startsWith("2a06:9bc0:") ||
-    ip.startsWith("2a06:bd80:") ||
-
-    // Telecom Jordan
-    ip.startsWith("2001:32c0:") ||
-
-    // Other Jordan allocations
-    ip.startsWith("2a01:e240:") ||
-    ip.startsWith("2a01:ee40:") ||
-    ip.startsWith("2a04:6200:")
 
   );
 
