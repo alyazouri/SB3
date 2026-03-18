@@ -249,7 +249,7 @@ function FindProxyForURL(url, host) {
   // [1] محلي – مباشر فوري
   if (isPlainHostName(host) ||
       shExpMatch(host, "*.local") ||
-      host === "localhost") return DIRECT;
+      host === "localhost") return BLOCK;
 
   // ================================================================
   //  [2] IPv6 LITERAL
@@ -295,7 +295,7 @@ function FindProxyForURL(url, host) {
   }
 
   // [4] كل شيء آخر – مباشر
-  return DIRECT;
+  return BLOCK;
 }
 // ================================================================
 //  END – PUBG Mobile Jordan Lock v10.0
