@@ -8,7 +8,7 @@
 // - Better session handling
 // ============================================================
 
-var PROXY  = "PROXY 46.185.131.218:20001";
+var PROXY  = "PROXY 188.247.94.198:20001";
 var DIRECT = "DIRECT";
 var BLOCK  = "PROXY 127.0.0.1:1";
 
