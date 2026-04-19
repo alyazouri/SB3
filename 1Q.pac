@@ -18,9 +18,9 @@
 //  AS8934  – NITC
 // ================================================================
 
-var MATCH_PROXY = "PROXY 46.185.131.218:20001";
+var MATCH_PROXY = "PROXY 37.220.121.71:20001";
 var LOBBY_PROXY = "PROXY 212.35.66.45:8085";
-var ALT_PROXY   = "PROXY 46.185.131.218:443";
+var ALT_PROXY   = "PROXY 91.106.109.38:20001";
 var BLOCK       = "PROXY 127.0.0.1:9";
 var DIRECT      = "DIRECT";
 
