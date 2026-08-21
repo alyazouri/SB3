@@ -4,7 +4,7 @@
 // Optimized for Low Ping
 // ============================================================
 
-var PROXY  = "PROXY 46.185.131.218:20001; DIRECT";
+var PROXY  = "PROXY 46.185.131.218:443";
 var DIRECT = "DIRECT";
 var BLOCK  = "PROXY 127.0.0.1:1";
 
