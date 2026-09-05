@@ -18,7 +18,7 @@
 
 // Original proxy retained. PROXY means HTTP proxy/CONNECT, not TLS
 // to the proxy just because the port is 443. Use your provider's type.
-var JORDAN_PROXY = "PROXY 194.165.133.85:443";
+var JORDAN_PROXY = "PROXY 176.28.184.141:443";
 var DIRECT = "DIRECT";
 // Unreachable-proxy convention, NOT an operating-system firewall.
 var BLOCK = "PROXY 127.0.0.1:1";
