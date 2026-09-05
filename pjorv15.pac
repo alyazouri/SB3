@@ -15,9 +15,9 @@
 //  [3] MATCH : realtime / combat / tick     → MATCH_PROXY صارم
 // ================================================================
 
-var MATCH_PROXY = "PROXY 46.185.131.218:20001";
-var LOBBY_PROXY = "PROXY 212.35.66.45:8085";
-var ALT_PROXY   = "PROXY 46.185.131.218:443";
+var MATCH_PROXY = "PROXY 176.28.184.141:80";
+var LOBBY_PROXY = "PROXY 212.35.66.45:20001";
+var ALT_PROXY   = "PROXY 176.28.184.141:443";
 var BLOCK       = "PROXY 127.0.0.1:9";
 var DIRECT      = "DIRECT";
 
