@@ -22,7 +22,7 @@ var AUTH_VIA_PROXY     = true;   // login/auth عبر البروكسي (يؤثر
 
 /* ---------- 2) PROXY POOL (بروكسياتك — تحقق من حيويتها دورياً) ---------- */
 var JO_PROXY_1 = "PROXY 79.173.249.116:8080";
-var JO_PROXY_2 = "PROXY 176.28.184.141:443";
+var JO_PROXY_2 = "PROXY 86.108.11.20:443";
 var JO_PROXY_3 = "PROXY 212.35.66.45:20001";
 
 /* ---------- 3) FAIL CLOSED / DIRECT ---------- */
