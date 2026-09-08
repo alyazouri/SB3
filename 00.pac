@@ -26,7 +26,7 @@
 /* وضع العمل:
      0 = أردني مباشر + الباقي عبر البروكسي   (الافتراضي الموصى به)
      1 = أردني عبر البروكسي + الباقي مباشر   (عكس المنطق — للاختبار)
-     2 = أردني عبر البروكسي + الباقي عبر البروكسي (كل شي مبروكسي)
+     2 = أردني عبر البروكسي + الباقي عبر البروكسي (عدا الشبكة المحلية = DIRECT دائماً)
      3 = كل شي DIRECT (البروكسي معطّل — مفيد للمقارنة/التشخيص)        */
 var MODE = 0;
 
@@ -54,9 +54,59 @@ var NEVER_PROXY = [
     "localhost", "127.0.0.1", "::1", "0.0.0.0"
 ];
 
-/* ======================== 2) نطاقات الأردن ========================= */
+/* ======================== 2) الشبكات المحلية (LAN) ================== */
+/* كل ما هنا -> DIRECT دائماً ومهما كان MODE (حتى MODE 2).              */
 
-/* أي نطاق ينتهي بأحد هذه → يُعتبر أردنياً/محلياً.
+/* نطاقات داخلية (تُطابق النطاق وأي نطاق فرعي تحته) */
+var INTRANET_SUFFIXES = [
+    ".local",      // mDNS / Bonjour / أسماء أجهزة الشبكة (nas.local, printer.local)
+    ".internal",   // نطاق داخلي شائع
+    ".intranet",
+    ".corp",
+    ".lan",
+    ".home",
+    ".localdomain",
+    ".workgroup",
+    ".int",
+    ".priv",
+    /* --- أضف نطاق شركتك/بيتك الداخلي هنا، مثال: --- */
+    // ".office.example.jo",
+    // ".dc1.local",
+    ""
+];
+
+/* أسماء مضيفين داخليين محدّدة (بدون نقاط أو بأسماء قصيرة) */
+var LAN_HOSTNAMES = [
+    "router", "nas", "printer", "server", "pve", "proxmox", "unifi",
+    "switch", "ap", "camera", "nvr", "gitlab", "jenkins", "wiki",
+    /* --- أضف أسماء أجهزتك هنا --- */
+    ""
+];
+
+/* عناوين/شبكات داخلية إضافية بصيغة CIDR (تُحوَّل تلقائياً لشبكة+قناع) */
+var LAN_CIDR = [
+    // "192.168.100.0/24",   // مثال: شبكة مختبر
+    // "10.20.0.0/16",       // مثال: شبكة فرع
+];
+
+/* هل نفحص الـ IP بعد حلّ DNS لاكتشاف الأجهزة الداخلية؟                */
+var LAN_DNS_CHECK = true;
+
+/* الشبكات الخاصة — دائماً DIRECT */
+var LOCAL_NETS = [
+    ["10.0.0.0",      "255.0.0.0"],      // 10/8   شبكة داخلية كبيرة
+    ["172.16.0.0",    "255.240.0.0"],    // 172.16/12
+    ["192.168.0.0",   "255.255.0.0"],    // 192.168/16 راوتر البيت
+    ["127.0.0.0",     "255.0.0.0"],      // loopback (البروكسي المحلي يعيش هنا)
+    ["169.254.0.0",   "255.255.0.0"],    // link-local
+    ["100.64.0.0",    "255.192.0.0"],    // CGNAT (شائع جداً على 4G الأردني)
+    ["224.0.0.0",     "240.0.0.0"],      // multicast (mDNS 224.0.0.251 ...)
+    ["0.0.0.0",       "255.255.255.255"] // "هذه الشبكة"
+];
+
+/* ======================== 3) نطاقات الأردن ========================= */
+
+/* أي نطاق ينتهي بأحد هذه -> يُعتبر أردنياً/محلياً.
    (.jo يغطي وحده معظم المواقع: *.gov.jo, *.edu.jo, *.com.jo, *.org.jo ...) */
 var JO_SUFFIXES = [
     ".jo"
@@ -68,7 +118,7 @@ var JO_EXTRA = [
     /* --- الاتصالات ومزوّدو الخدمة --- */
     "orange.jo", "zain.jo", "jo.zain.com", "umniah.com", "zaincash.jo",
     /* --- الطيران والنقل --- */
-    "rj.com", "jett.com.jo", "aig.aero", "queenalia.airport",
+    "rj.com", "jett.com.jo", "aig.aero",
     /* --- بنوك (نطاقات عالمية) --- */
     "hbtf.com", "housingbank.com", "jordanislamicbank.com", "arabbank.com.jo",
     "arabbank.jo", "cab.jo", "capitalbank.jo", "investbank.jo",
@@ -81,11 +131,12 @@ var JO_EXTRA = [
     ""
 ];
 
-/* ========================== 3) شبكات الأردن ========================= */
+/* ========================== 4) شبكات الأردن ========================= */
 /* [الشبكة، قناع الشبكة] — تُستخدم مع isInNet()                         */
 var JO_NETS = [
     ["193.188.64.0",  "255.255.192.0"],  // الحكومة الأردنية (mof/moe/moh/moin...)
     ["188.247.72.0",  "255.255.248.0"],  // الحكومة الأردنية (istd/ssc/dos...)
+    ["193.188.0.0",   "255.255.0.0"],    // حكومة/جامعات (شاملة)
     ["87.236.232.0",  "255.255.252.0"],  // جامعات (ju/just/aabu/gju...)
     ["86.108.0.0",    "255.252.0.0"],    // مزوّدو أردنيون (yu.edu.jo...)
     ["212.118.0.0",   "255.255.128.0"],  // Umniah / البنك المركزي
@@ -101,37 +152,67 @@ var JO_NETS = [
     ["92.253.0.0",    "255.255.0.0"],    // تخصيصات أردنية (jpu.edu.jo...)
     ["185.217.124.0", "255.255.252.0"],  // تخصيصات أردنية (irbid.gov.jo...)
     ["176.100.0.0",   "255.252.0.0"],    // تخصيصات أردنية
-    ["185.25.36.0",   "255.255.252.0"],  // تخصيصات أردنية
-    ["193.188.0.0",   "255.255.0.0"]     // شبكة الحكومة/الجامعات (شاملة)
+    ["185.25.36.0",   "255.255.252.0"]   // تخصيصات أردنية
 ];
 
-/* الشبكات الخاصة والمحلية — دائماً DIRECT (مهما كان الوضع)             */
-var LOCAL_NETS = [
-    ["10.0.0.0",      "255.0.0.0"],      // 10/8   شبكة داخلية
-    ["172.16.0.0",    "255.240.0.0"],    // 172.16/12
-    ["192.168.0.0",   "255.255.0.0"],    // 192.168/16 راوتر البيت
-    ["127.0.0.0",     "255.0.0.0"],      // loopback
-    ["169.254.0.0",   "255.255.0.0"],    // link‑local
-    ["100.64.0.0",    "255.192.0.0"],    // CGNAT (شائع على 4G الأردني)
-    ["224.0.0.0",     "240.0.0.0"]       // multicast
-];
-
-/* =========================== 4) الدوال ============================= */
+/* =========================== 5) الدوال ============================= */
 
 /* تحويل اسم نطاق إلى حروف صغيرة (تجنّب أخطاء الأحرف الكبيرة) */
 function lc(s) { return String(s || "").toLowerCase(); }
 
-/* هل النص عنوان IP وليس اسم نطاق؟ */
-function isIpLiteral(h) {
-    h = lc(h);
-    if (h.indexOf(":") > -1) return true;                       // IPv6
-    var p = h.split(".");
+/* هل النص عنوان IPv4 صحيح؟ */
+function isIpv4(h) {
+    var p = lc(h).split(".");
     if (p.length !== 4) return false;
     for (var i = 0; i < 4; i++) {
         if (!/^\d{1,3}$/.test(p[i])) return false;
         if (+p[i] > 255) return false;
     }
     return true;
+}
+
+/* هل النص عنوان IP (v4 أو v6)؟ */
+function isIpLiteral(h) {
+    h = lc(h);
+    if (h.indexOf(":") > -1) return true;   // IPv6
+    return isIpv4(h);
+}
+
+/* تجريـد المنفذ/الأقواس من اسم المضيف (بعض الأنظمة تمرّرها معه) */
+function bareHost(h) {
+    h = lc(h);
+    if (!h) return h;
+    if (h.charAt(0) === "[") {
+        var close = h.indexOf("]");
+        if (close > -1) return h.substring(1, close);
+        return h.replace(/[\[\]]/g, "");
+    }
+    var colon = h.lastIndexOf(":");
+    var dot = h.lastIndexOf(".");
+    if (colon > -1 && h.indexOf(":") === colon && colon > dot) return h.substring(0, colon);
+    return h;
+}
+
+/* عنوان IPv6 محلي/خاص فقط — العام لا يُعتبر محلياً حتى لا يتجاوز البروكسي */
+function isLocalIpv6(h) {
+    h = lc(h).replace(/^\[|\]$/g, "").replace(/^::ffff:/, "");
+    if (!h || h.indexOf(":") === -1) return false;
+    if (h === "::" || h === "::1") return true;                        // غير معرّف / loopback
+    if (h.indexOf("fe8") === 0 || h.indexOf("fe9") === 0 ||
+        h.indexOf("fea") === 0 || h.indexOf("feb") === 0) return true;  // fe80::/10 link-local
+    if (h.indexOf("fc") === 0 || h.indexOf("fd") === 0) return true;    // fc00::/7 (ULA)
+    if (h.indexOf("ff") === 0) return true;                             // multicast
+    return false;
+}
+
+/* تحويل CIDR مثل 192.168.100.0/24 إلى [الشبكة، القناع] */
+function cidrToNet(cidr) {
+    var parts = String(cidr).split("/");
+    var ip = parts[0], bits = parts.length > 1 ? +parts[1] : 32;
+    if (!isIpv4(ip) || isNaN(bits) || bits < 0 || bits > 32) return null;
+    var mask = bits === 0 ? 0 : (0xFFFFFFFF << (32 - bits)) >>> 0;
+    var m = [(mask >>> 24) & 255, (mask >>> 16) & 255, (mask >>> 8) & 255, mask & 255].join(".");
+    return [ip, m];
 }
 
 /* هل h نفسه أو أي نطاق فرعي منه موجود في القائمة list؟ */
@@ -157,6 +238,57 @@ function inNets(ip, nets) {
     return false;
 }
 
+/* قائمة شبكات الـ LAN بعد دمج LOCAL_NETS مع LAN_CIDR */
+function allLocalNets() {
+    var nets = [];
+    for (var i = 0; i < LOCAL_NETS.length; i++) nets.push(LOCAL_NETS[i]);
+    for (var j = 0; j < LAN_CIDR.length; j++) {
+        var n = cidrToNet(LAN_CIDR[j]);
+        if (n) nets.push(n);
+    }
+    return nets;
+}
+
+/* هل هذا عنوان داخل الشبكة المحلية؟ (الأولوية القصوى — دائماً DIRECT) */
+function isLocal(host) {
+    host = lc(host);
+    if (!host) return true;
+
+    /* 0) تجريد المنفذ/الأقواس لو مرّا مع المضيف (192.168.1.50:8080 أو [fd00::5]:443) */
+    var bare = bareHost(host);
+
+    /* 1) عنوان IP مباشر */
+    if (isIpLiteral(bare)) {
+        if (bare.indexOf(":") > -1) return isLocalIpv6(bare);   // IPv6: خاص/محلي فقط
+        if (inNets(bare, allLocalNets())) return true;
+        return false;                                           // IP عام → ليس محلياً
+    }
+
+    /* 2) اسم قصير بدون نقطة = جهاز داخل الشبكة (بعد استثناء IPv6 بالأعلى) */
+    if (bare.indexOf(".") === -1) return true;
+
+    /* 3) قائمة أسماء الأجهزة الداخلية */
+    if (inSuffixList(bare, LAN_HOSTNAMES)) return true;
+
+    /* 4) النطاقات الداخلية: .local / .internal / .corp ... */
+    if (inSuffixList(bare, INTRANET_SUFFIXES)) return true;
+
+    /* 5) حلّ DNS ثم فحص الـ IP (يلتقط أسماء داخلية تُحلّ لعناوين خاصة) */
+    if (LAN_DNS_CHECK) {
+        try {
+            var ips = dnsResolveEx(bare) || dnsResolve(bare) || "";
+            var parts = String(ips).split(";");
+            for (var i = 0; i < parts.length; i++) {
+                var ip = parts[i];
+                if (!ip) continue;
+                if (ip.indexOf(":") > -1) continue;        // IPv6 → نتجاوزه هنا
+                if (inNets(ip, allLocalNets())) return true;
+            }
+        } catch (e) { /* DNS فشل — نكتفي بما سبق */ }
+    }
+    return false;
+}
+
 /* قرار "أردني؟" — يعتمد على النطاق، ولو فشل يطبّق DNS ثم يفحص IP */
 function isJordan(url, host) {
     host = lc(host);
@@ -165,14 +297,11 @@ function isJordan(url, host) {
     if (inSuffixList(host, JO_SUFFIXES)) return true;
     if (inSuffixList(host, JO_EXTRA))    return true;
 
-    /* 2) لو المضيف عنوان IP أصلاً، أو أردنا فحص الـ IP: حلّ DNS ثم قارن */
+    /* 2) حلّ DNS ثم قارن الـ IP بشبكات الأردن */
     if (DNS_CHECK) {
         try {
-            var ips = dnsResolveEx(host);                 // قد يُرجع IPv4;IPv6
-            if (!ips) {
-                var one = dnsResolve(host);               // رجوع لـ dnsResolve
-                ips = one ? one : "";
-            }
+            var ips = dnsResolveEx(host);
+            if (!ips) { var one = dnsResolve(host); ips = one ? one : ""; }
             var parts = String(ips).split(";");
             for (var i = 0; i < parts.length; i++) {
                 var ip = parts[i];
@@ -207,29 +336,27 @@ function dbg(host, decision, reason) {
     if (DEBUG) { try { alert("PAC [" + host + "] -> " + decision + "  (" + reason + ")"); } catch (e) {} }
 }
 
-/* ====================== 5) الدالة الرئيسية ========================= */
+/* ====================== 6) الدالة الرئيسية ========================= */
 
 function FindProxyForURL(url, host) {
-    host = lc(host);
+    host = bareHost(host);          /* تطبيع: حروف صغيرة + تجريد المنفذ/الأقواس */
     url  = lc(url);
 
     /* (أ) استثناءات مطلقة: لا بروكسي إطلاقاً */
     if (inSuffixList(host, NEVER_PROXY)) { dbg(host, "DIRECT", "never-proxy"); return "DIRECT"; }
 
-    /* (ب) عناوين IP المباشرة */
-    if (isIpLiteral(host)) {
-        if (host.indexOf(":") > -1) { dbg(host, "DIRECT", "IPv6 literal"); return "DIRECT"; }
-        if (inNets(host, LOCAL_NETS)) { dbg(host, "DIRECT", "local/private IP"); return "DIRECT"; }
-        if (inNets(host, JO_NETS))    { dbg(host, "DIRECT", "Jordanian IP"); return "DIRECT"; }
+    /* (ب) الشبكة المحلية — أولوية قصوى، مباشرة حتى لو MODE = 2 */
+    if (isLocal(host)) { dbg(host, "DIRECT", "LAN / local → direct"); return "DIRECT"; }
+
+    /* (ج) عنوان IP أردني صريح */
+    if (isIpv4(host) && inNets(host, JO_NETS)) {
+        dbg(host, "DIRECT", "Jordanian IP"); return "DIRECT";
     }
 
-    /* (ج) أسماء مضيفين قصيرة (بدون نقطة) = أجهزة داخل الشبكة */
-    if (host.indexOf(".") === -1) { dbg(host, "DIRECT", "intranet name"); return "DIRECT"; }
-
     /* (د) القرار حسب الوضع */
-    var jo = isJordan(url, host);
-
     if (MODE === 3) { dbg(host, "DIRECT", "MODE 3"); return "DIRECT"; }
+
+    var jo = isJordan(url, host);
 
     if (MODE === 0) {
         if (jo) { dbg(host, "DIRECT", "Jordan → direct"); return "DIRECT"; }
@@ -261,7 +388,7 @@ function FindProxyForURL(url, host) {
 /* دعم بعض الأنظمة التي تنادي الاسم القديم */
 function FindProxyForURLEx(url, host) { return FindProxyForURL(url, host); }
 
-/* =========================== 6) التثبيت =============================
+/* =========================== 7) التثبيت =============================
    Windows 10/11:
      Settings → Network & internet → Proxy → Use a setup script = On
      Script address: file:///C:/Users/<you>/jordan.pac   (أو رابط http)
